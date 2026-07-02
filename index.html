@@ -748,6 +748,34 @@ a { color: inherit; text-decoration: none; }
   color: #999;
   cursor: not-allowed;
 }
+.bottom-bar-customer {
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: 180px;
+}
+.bottom-bar-customer::placeholder { color: var(--ink-2); }
+.bottom-bar-customer:focus { outline: none; border-color: var(--ink); }
+.bottom-bar-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  background: #fff5f5;
+  border: 1px solid #e2a4a4;
+  color: #a33;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  z-index: 40;
+  display: none;
+}
+.bottom-bar-toast.show { display: block; }
 
 body.has-bottom-bar .shell { padding-bottom: 160px; }
 </style>
@@ -920,10 +948,12 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     <button class="bottom-bar-clear" onclick="clearSelected()">清除全部</button>
     <div class="bottom-bar-actions">
       <span class="bottom-bar-count" id="bottomBarCount">已選 0 件禮贈品</span>
-      <button class="bottom-bar-export" disabled title="功能開發中：之後會顯示已選清單，並連結 Google Sheet 觸發簡報生成">檢查匯出清單</button>
+      <input type="text" class="bottom-bar-customer" id="customerNameInput" placeholder="提案客戶名稱" oninput="onCustomerNameInput()">
+      <button class="bottom-bar-export" id="exportBtn" disabled onclick="handleExport()">匯出清單</button>
     </div>
   </div>
 </div>
+<div class="bottom-bar-toast" id="exportToast"></div>
 
 <script>
 // ════════════════════════════════════
@@ -931,6 +961,14 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 // ════════════════════════════════════
 const SHEET_ID   = '1ElYuyhmYM7GGUIdx1h93AiIqSISDbzaO15CN_goIx9A';
 const SHEET_GID  = '0'; // 第一張工作表
+
+// 匯出清單設定
+// 下週拿到 doPost 部署網址後，把下面這行引號裡的字串換成真網址即可，其他程式碼不用動
+const EXPORT_WEBAPP_URL = 'PASTE_YOUR_WEBAPP_URL_HERE';
+// 密語要跟待匯出 Sheet 的 Apps Script「Script Properties」裡 COZU_TOKEN 的值一致
+const EXPORT_TOKEN      = 'PASTE_YOUR_TOKEN_HERE';
+// 待匯出 Sheet 網址，送出成功後會自動導向這裡
+const EXPORT_SHEET_URL  = 'https://docs.google.com/spreadsheets/d/1nzNcaul4ToETE4xADTDJB2TTi495Q3OROvI-Nhb8xUM/edit';
 
 // 預算篩選：以 price_max（小量採購報價）為基準
 const BUDGET_OPTS = [
@@ -960,6 +998,7 @@ let selTags    = new Set();
 let selBudgets = new Set(); // 多選
 let selMoq     = 'all';
 let selectedIds = new Set(); // 已勾選商品的 _id
+let customerName = ''; // 提案客戶名稱
 
 // ════════════════════════════════════
 // 載入資料
@@ -1035,6 +1074,7 @@ function parseGviz(json) {
       themes            : get('themes').split(',').map(s => s.trim()).filter(Boolean),
       nas_path          : get('nas_path'),
       image_url         : get('image_url'),
+      slide_id          : get('slide_id'),
       last_updated_time : parseGvizDate(get('last_updated_time')),
       proposals,
     };
@@ -1358,6 +1398,63 @@ function updateBottomBar() {
   document.getElementById('bottomBarCount').textContent = `已選 ${count} 件禮贈品`;
   bar.classList.toggle('show', count > 0);
   document.body.classList.toggle('has-bottom-bar', count > 0);
+
+  // 匯出按鈕：客戶名稱有填 且 已勾選至少 1 件商品，才解鎖
+  const exportBtn = document.getElementById('exportBtn');
+  exportBtn.disabled = !(count > 0 && customerName.length > 0);
+}
+
+function onCustomerNameInput() {
+  customerName = document.getElementById('customerNameInput').value.trim();
+  updateBottomBar();
+}
+
+// ════════════════════════════════════
+// 匯出清單（doPost 串接）
+// ════════════════════════════════════
+async function handleExport() {
+  if (selectedIds.size === 0 || !customerName) return;
+
+  // 一定要在這裡（使用者點擊的當下、await 之前）同步呼叫 window.open，
+  // 不然瀏覽器的彈出視窗攔截器會擋掉之後才開的分頁
+  const popup = window.open('', '_blank');
+
+  const items = products
+    .filter(p => selectedIds.has(p._id))
+    .map(p => ({ name: p.name, slideId: p.slide_id || '' }));
+
+  const payload = {
+    token: EXPORT_TOKEN,
+    customer: customerName,
+    items,
+  };
+
+  try {
+    const res = await fetch(EXPORT_WEBAPP_URL, {
+      method: 'POST',
+      // Content-Type 用 text/plain 是刻意的：避免瀏覽器對 GAS doPost 發出 CORS 預檢請求（GAS 不支援），這是業界慣用寫法
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      if (popup) popup.location.href = EXPORT_SHEET_URL;
+    } else {
+      if (popup) popup.close();
+      showExportError(result.message || '送出失敗，請確認密語或資料格式');
+    }
+  } catch (err) {
+    if (popup) popup.close();
+    showExportError('系統可能有網路連線問題，請確認網路後再試一次');
+  }
+}
+
+function showExportError(msg) {
+  const toast = document.getElementById('exportToast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
 // ════════════════════════════════════
