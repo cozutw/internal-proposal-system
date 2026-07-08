@@ -1030,7 +1030,13 @@ async function loadData() {
 }
 
 function parseGviz(json) {
-  const cols = json.table.cols.map(c => c.label);
+  // 欄位名稱取 label 的「最後一個字詞」：
+  // 資料庫表頭上方有給同事看的負責人／填寫規則列，gviz 會把多列表頭串接成一長串，
+  // 但真正的欄位名稱固定放在最後。
+  // ⚠️ 隱性規則：試算表的說明文字一律寫在欄位名稱「前面」，絕不能寫在後面，否則解析會壞。
+  const cols = json.table.cols.map(c =>
+    String(c.label || '').trim().split(/\s+/).pop() || ''
+  );
   const rows = json.table.rows;
   return rows.map((row, idx) => {
     const get = k => {
