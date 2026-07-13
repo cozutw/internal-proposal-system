@@ -876,6 +876,18 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       </div>
     </div>
 
+    <!-- 交期 -->
+    <div class="fgroup" id="leadGroup" style="display:none">
+      <div class="fgroup-title">交期</div>
+      <div class="chips" id="leadChips"></div>
+    </div>
+
+    <!-- 庫存狀態 -->
+    <div class="fgroup" id="stockGroup" style="display:none">
+      <div class="fgroup-title">庫存狀態</div>
+      <div class="chips" id="stockChips"></div>
+    </div>
+
     <!-- 場合 -->
     <div class="fgroup collapsible collapsed">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
@@ -1004,6 +1016,8 @@ let selThemes  = new Set();
 let selInds    = new Set();
 let selTags    = new Set();
 let selBudgets = new Set(); // 多選
+let selLeads   = new Set(); // 交期（多選）
+let selStocks  = new Set(); // 庫存狀態（多選）
 let selMoq     = 'all';
 let selectedIds = new Set(); // 已勾選商品的 _id
 let customerName = ''; // 提案客戶名稱
@@ -1041,7 +1055,10 @@ function parseGviz(json) {
   return rows.map((row, idx) => {
     const get = k => {
       const i = cols.indexOf(k);
-      return (i >= 0 && row.c[i]) ? String(row.c[i].v).trim() : '';
+      const cell = i >= 0 ? row.c[i] : null;
+      // gviz 的空儲存格有時回傳 {v: null} 而不是整格缺席，
+      // 若不擋 null，String(null) 會變成字串 "null" 一路顯示到畫面上
+      return (cell && cell.v != null) ? String(cell.v).trim() : '';
     };
     // proposals: 格式「公司名稱|場合|年份|selected（可空）|簡報URL（可空）」
     // 第四欄若不是 'selected' 則視為 URL（兼容沒有補空欄的資料）
@@ -1089,6 +1106,8 @@ function parseGviz(json) {
       nas_path          : get('nas_path'),
       image_url         : get('image_url'),
       slide_id          : get('slide_id'),
+      lead_time         : get('lead_time'),
+      in_stock          : get('in_stock'),
       last_updated_time : parseGvizDate(get('last_updated_time')),
       proposals,
     };
@@ -1172,16 +1191,26 @@ function matchBudget(p) {
 function matchMoq(moq) {
   return moq <= MOQ_OPTS.find(m => m.id === selMoq).max;
 }
+// 排序基準：卡片主要顯示價格（price，500份報價）的最低值；
+// price 缺值時退回 price_max，再缺值排最後
+function priceSortKey(p) {
+  const v = lowestPrice(p.price);
+  if (v != null) return v;
+  return p.price_max || Infinity;
+}
+
 function getFiltered() {
   return products.filter(p => {
     if (selMats.size   && !getMats(p).some(m => selMats.has(m)))             return false;
     if (selThemes.size && !p.themes.some(t => selThemes.has(t)))            return false;
     if (selInds.size   && !p.industries.some(i => selInds.has(i)))          return false;
     if (selTags.size   && !selTags.has(p.tag))                              return false;
+    if (selLeads.size  && !selLeads.has(p.lead_time))                       return false;
+    if (selStocks.size && !selStocks.has(p.in_stock))                       return false;
     if (!matchBudget(p))                                                    return false;
     if (!matchMoq(p.moq))                                                   return false;
     return true;
-  });
+  }).sort((a, b) => priceSortKey(a) - priceSortKey(b)); // 預設：價格低 → 高
 }
 
 // ════════════════════════════════════
@@ -1244,6 +1273,20 @@ function buildChipGroup(containerId, options, selSet, onToggle) {
   });
 }
 
+// 交期／庫存的顯示順序偏好：資料庫出現的值照這個順序排，
+// 不在清單裡的值排在後面（照字典序），確保新增選項也不會被藏起來
+const LEAD_ORDER  = ['十天內', '2週', '3週', '1個月', '一個月內', '1.5個月', '2個月', '兩個月內'];
+const STOCK_ORDER = ['有現貨', '需洽詢', '需訂製'];
+
+// 從 products 動態取得某欄位所有不重複的值，依偏好順序排列
+function getDynamicVals(field, order) {
+  const seen = new Set();
+  products.forEach(p => { if (p[field]) seen.add(p[field]); });
+  const inOrder = order.filter(v => seen.has(v));
+  const rest    = [...seen].filter(v => !order.includes(v)).sort();
+  return [...inOrder, ...rest];
+}
+
 function buildRail() {
   const counts  = computeCounts();
   const allMats = getDynamicMats();
@@ -1251,6 +1294,14 @@ function buildRail() {
   buildCheckGroup('themeOpts', ALL_THEMES, selThemes, counts.theme, v => toggle(selThemes, v, render));
   buildCheckGroup('indOpts',   ALL_INDS,   selInds,   counts.ind,   v => toggle(selInds, v, render));
   buildCheckGroup('tagOpts',   ALL_TAGS,   selTags,   counts.tag,   v => toggle(selTags, v, render));
+
+  // 交期／庫存：選項來自資料庫實際填寫的值；資料庫該欄全空時整組隱藏
+  const leadVals  = getDynamicVals('lead_time', LEAD_ORDER);
+  const stockVals = getDynamicVals('in_stock',  STOCK_ORDER);
+  document.getElementById('leadGroup').style.display  = leadVals.length  ? '' : 'none';
+  document.getElementById('stockGroup').style.display = stockVals.length ? '' : 'none';
+  buildChipGroup('leadChips',  leadVals,  selLeads,  v => toggle(selLeads,  v, render));
+  buildChipGroup('stockChips', stockVals, selStocks, v => toggle(selStocks, v, render));
 }
 
 function toggle(set, val, cb) {
@@ -1289,7 +1340,7 @@ function pickMoq(id) {
 function render() {
   buildRail();
   const filtered = getFiltered();
-  const hasFilter = selMats.size || selThemes.size || selInds.size || selTags.size || selBudgets.size || selMoq !== 'all';
+  const hasFilter = selMats.size || selThemes.size || selInds.size || selTags.size || selBudgets.size || selLeads.size || selStocks.size || selMoq !== 'all';
 
   document.getElementById('clearBtn').disabled = !hasFilter;
   document.getElementById('resCount').innerHTML = `找到 <b>${filtered.length}</b> 項商品`;
@@ -1309,6 +1360,8 @@ function render() {
   selThemes.forEach(t => addChip('場合：' + t, () => toggle(selThemes, t, render)));
   selInds.forEach(i  => addChip('產業：' + i,  () => toggle(selInds,   i, render)));
   selTags.forEach(t  => addChip('風格：' + t,  () => toggle(selTags,   t, render)));
+  selLeads.forEach(l  => addChip('交期：' + l, () => toggle(selLeads,  l, render)));
+  selStocks.forEach(s => addChip('庫存：' + s, () => toggle(selStocks, s, render)));
   selBudgets.forEach(id => {
     const opt = BUDGET_OPTS.find(b => b.id === id);
     if (opt) addChip('預算：' + opt.label, () => { selBudgets.delete(id); updateBudgetChips(); render(); });
@@ -1527,7 +1580,7 @@ function toggleFgroup(titleEl) {
 // ════════════════════════════════════
 function clearAll() {
   selMats.clear(); selThemes.clear(); selInds.clear(); selTags.clear();
-  selBudgets.clear(); selMoq = 'all';
+  selBudgets.clear(); selLeads.clear(); selStocks.clear(); selMoq = 'all';
   updateBudgetChips();
   document.querySelectorAll('#moqChips .chip').forEach(b => b.classList.toggle('on', b.dataset.moq === 'all'));
   render();
@@ -1593,6 +1646,8 @@ function openPeek(p) {
       <div class="dl-title">規格</div>
       <div class="dl-row"><span class="dl-key">材質</span><span class="dl-val">${p.material}</span></div>
       <div class="dl-row"><span class="dl-key">最低訂購量</span><span class="dl-val">${p.moq.toLocaleString()} 件</span></div>
+      <div class="dl-row"><span class="dl-key">交期</span><span class="dl-val">${p.lead_time || '—'}</span></div>
+      <div class="dl-row"><span class="dl-key">庫存狀態</span><span class="dl-val">${p.in_stock || '—'}</span></div>
       <div class="dl-row"><span class="dl-key">自訂標籤</span><span class="dl-val">${p.tag}</span></div>
       ${p.last_updated_time ? `<div class="dl-row"><span class="dl-key">最後更新時間</span><span class="dl-val">${p.last_updated_time}</span></div>` : ''}
     </div>
