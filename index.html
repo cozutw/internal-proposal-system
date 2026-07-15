@@ -979,8 +979,8 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 // ════════════════════════════════════
 // 設定
 // ════════════════════════════════════
-const SHEET_ID   = '1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE';
-const SHEET_GID  = '0'; // 第一張工作表
+// 商品資料改由 GAS 讀取中介層（doGet）提供，2026-07-15 起取代 gviz
+// Sheet ID 不再出現在前端程式碼中（資料網址見下方 DATA_API_URL）
 
 // 匯出清單設定
 // 把下面這行引號裡的字串換成真網址
@@ -989,6 +989,10 @@ const EXPORT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyIuMD3FcvCjy
 const EXPORT_TOKEN      = 'supercozu2026';
 // 待匯出 Sheet 網址，送出成功後會自動導向這裡
 const EXPORT_SHEET_URL  = 'https://docs.google.com/spreadsheets/d/1nzNcaul4ToETE4xADTDJB2TTi495Q3OROvI-Nhb8xUM/edit';
+
+// 商品資料讀取網址（與匯出接收器同一個 GAS 部署，帶 ?data=products 參數）
+// 快取 10 分鐘；業助改完資料想立即確認，可在瀏覽器開此網址並加上 &fresh=1
+const DATA_API_URL = EXPORT_WEBAPP_URL + '?data=products';
 
 // 預算篩選：以 price_max（小量採購報價）為基準
 const BUDGET_OPTS = [
@@ -1023,48 +1027,28 @@ let selectedIds = new Set(); // 已勾選商品的 _id
 let customerName = ''; // 提案客戶名稱
 
 // ════════════════════════════════════
-// 載入資料
+// 載入資料（2026-07-15 起改讀 GAS 中介層，gviz 與 parseGviz/parseGvizDate 退役）
 // ════════════════════════════════════
 async function loadData() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
-  try {
-    const res  = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const m    = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
-    if (!m) {
-      // fallback：舊格式
-      const raw = text.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
-      return parseGviz(JSON.parse(raw));
-    }
-    return parseGviz(JSON.parse(m[1]));
-  } catch (e) {
-    throw e;
-  }
+  const res = await fetch(DATA_API_URL);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  // GAS ContentService 經轉址後 Content-Type 不一定是 JSON，用 text 再 parse 最穩
+  const data = JSON.parse(await res.text());
+  if (!data.success) throw new Error(data.message || '中介層回報讀取失敗');
+  return parseProducts(data.products || []);
 }
 
-function parseGviz(json) {
-  // 欄位名稱取 label 的「最後一個字詞」：
-  // 資料庫表頭上方有給同事看的負責人／填寫規則列，gviz 會把多列表頭串接成一長串，
-  // 但真正的欄位名稱固定放在最後。
-  // ⚠️ 隱性規則：試算表的說明文字一律寫在欄位名稱「前面」，絕不能寫在後面，否則解析會壞。
-  const cols = json.table.cols.map(c =>
-    String(c.label || '').trim().split(/\s+/).pop() || ''
-  );
-  const rows = json.table.rows;
-  return rows.map((row, idx) => {
-    const get = k => {
-      const i = cols.indexOf(k);
-      const cell = i >= 0 ? row.c[i] : null;
-      // gviz 的空儲存格有時回傳 {v: null} 而不是整格缺席，
-      // 若不擋 null，String(null) 會變成字串 "null" 一路顯示到畫面上
-      return (cell && cell.v != null) ? String(cell.v).trim() : '';
-    };
+// 把中介層回傳的商品 JSON 整理成前端使用的物件格式
+// （欄位皆為字串、空欄為 ''、日期已是 YYYY-MM-DD，不需再做 gviz 式的型別防禦）
+function parseProducts(items) {
+  return items.map((item, idx) => {
+    const get = k => String(item[k] ?? '').trim();
+
     // proposals: 格式「公司名稱|場合|年份|selected（可空）|簡報URL（可空）」
     // 第四欄若不是 'selected' 則視為 URL（兼容沒有補空欄的資料）
     const proposalsRaw = get('proposals');
     const proposals = proposalsRaw
-      ? proposalsRaw.trim().split('\n').map(l => {
+      ? proposalsRaw.split('\n').map(l => {
           const parts    = l.trim().split('|');
           const company  = (parts[0] || '').trim();
           const occasion = (parts[1] || '').trim();
@@ -1082,13 +1066,11 @@ function parseGviz(json) {
         })
       : [];
 
-    // price 欄位用 .f（格式化字串）讀取，避免 gviz 把 "65-75" 當成數學運算
-    const priceIdx  = cols.indexOf('price');
-    const priceRaw  = (priceIdx >= 0 && row.c[priceIdx])
-      ? String(row.c[priceIdx].f ?? row.c[priceIdx].v ?? '').trim()
-      : '';
-    const priceMax  = parseFloat(get('price_max')) || parseFloat(priceRaw) || 0;
-    const priceMin  = parseFloat(get('price_min')) || priceMax;
+    // 預算篩選用數值：price_max 取範圍起始值（"85-95" → 85）
+    const priceRaw = get('price');
+    const priceMax = parseFloat(get('price_max')) || parseFloat(priceRaw) || 0;
+    const priceMin = parseFloat(get('price_min')) || priceMax;
+
     return {
       _id               : idx,
       name              : get('name'),
@@ -1102,13 +1084,13 @@ function parseGviz(json) {
       material          : get('material'),
       tag               : get('tag'),
       industries        : get('industries').split(',').map(s => s.trim()).filter(Boolean),
-      themes            : get('themes').split(',').map(s => s.trim()).filter(Boolean),
-      nas_path          : get('nas_path'),
+      themes            : [], // 資料庫無此欄位；保留空陣列讓主題篩選程式正常運作
+      nas_path          : '', // 中介層白名單不回傳（內部資訊）；Panel 會顯示預設路徑
       image_url         : get('image_url'),
       slide_id          : get('slide_id'),
       lead_time         : get('lead_time'),
       in_stock          : get('in_stock'),
-      last_updated_time : parseGvizDate(get('last_updated_time')),
+      last_updated_time : get('last_updated_time'), // 中介層已輸出 YYYY-MM-DD
       proposals,
     };
   }).filter(p => p.name);
@@ -1116,21 +1098,6 @@ function parseGviz(json) {
 
 function getMats(p) {
   return p.material_category ? [p.material_category] : [];
-}
-
-// gviz 日期格式轉換：Date(2026,5,29,14,53,0) → 2026/6/29 14:53
-function parseGvizDate(val) {
-  if (!val) return '';
-  const m = String(val).match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+))?/);
-  if (m) {
-    const year  = m[1];
-    const month = parseInt(m[2]) + 1; // gviz 月份從 0 開始
-    const day   = m[3];
-    const hour  = m[4] != null ? String(m[4]).padStart(2,'0') : null;
-    const min   = m[5] != null ? String(m[5]).padStart(2,'0') : null;
-    return hour ? `${year}/${month}/${day} ${hour}:${min}` : `${year}/${month}/${day}`;
-  }
-  return val; // 如果已經是純文字就直接回傳
 }
 
 // ════════════════════════════════════
