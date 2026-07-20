@@ -255,6 +255,39 @@ a { color: inherit; text-decoration: none; }
 .res-count { font-size: 13px; color: var(--ink); white-space: nowrap; }
 .res-count b { font-weight: 700; }
 .res-remark { font-size: 12px; color: var(--ink-2); margin-top: 4px; margin-bottom: 20px; }
+
+/* ── 客戶單品預算橫幅（2026-07-20 改版：第二層篩選）── */
+.budget-banner {
+  position: sticky;
+  top: 106px;              /* 吸在 topbar 下方，與 rail 的 top 對齊 */
+  z-index: 5;              /* 低於 topbar(10) */
+  background: #faf5f0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: padding .2s ease;
+}
+.budget-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.budget-banner-title svg { width: 15px; height: 15px; color: #b08d57; }
+.budget-banner-chips { justify-content: center; }
+.budget-banner .chip { background: #fff; padding: 5px 14px; font-size: 12px; }
+.budget-banner .chip.on { background: var(--ink); border-color: var(--ink); }
+/* 吸頂時縮薄：隱藏標題、縮小內距（試做版，效果不佳可整段移除 .stuck 規則）*/
+.budget-banner.stuck { padding: 8px 20px; }
+.budget-banner.stuck .budget-banner-title { display: none; }
+
+/* 選定 MOQ 但商品無對應級距報價的標註（視覺樣式第一版，待 Can 調整）*/
+.card-price-noquote { font-size: 12px; font-weight: 600; color: #b08d57; }
 .active-chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .achip {
   display: inline-flex;
@@ -847,35 +880,24 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <button class="clear-btn" id="clearBtn" onclick="clearAll()" disabled>清除篩選</button>
     </div>
 
+    <!-- MOQ（2026-07-20 改版：第一層篩選，精確訂購數量；移至 rail 第一位）-->
+    <div class="fgroup">
+      <div class="fgroup-title">訂購數量 MOQ</div>
+      <div class="chips" id="moqChips">
+        <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
+        <button class="chip" data-moq="50"   onclick="pickMoq('50')">50</button>
+        <button class="chip" data-moq="100"  onclick="pickMoq('100')">100</button>
+        <button class="chip" data-moq="200"  onclick="pickMoq('200')">200</button>
+        <button class="chip" data-moq="300"  onclick="pickMoq('300')">300</button>
+        <button class="chip" data-moq="500"  onclick="pickMoq('500')">500</button>
+        <button class="chip" data-moq="1000" onclick="pickMoq('1000')">1000</button>
+      </div>
+    </div>
+
     <!-- 材質 -->
     <div class="fgroup">
       <div class="fgroup-title">材質</div>
       <div id="matOpts"></div>
-    </div>
-
-    <!-- 預算 -->
-    <div class="fgroup">
-      <div class="fgroup-title">單品預算</div>
-      <div class="chips" id="budgetChips">
-        <button class="chip" data-budget="u100"    onclick="toggleBudget('u100')">NT$100 以下</button>
-        <button class="chip" data-budget="100-200" onclick="toggleBudget('100-200')">NT$100–200</button>
-        <button class="chip" data-budget="200-300" onclick="toggleBudget('200-300')">NT$200–300</button>
-        <button class="chip" data-budget="300-400" onclick="toggleBudget('300-400')">NT$300–400</button>
-        <button class="chip" data-budget="400-500" onclick="toggleBudget('400-500')">NT$400–500</button>
-        <button class="chip" data-budget="o500"    onclick="toggleBudget('o500')">NT$500 以上</button>
-      </div>
-    </div>
-
-    <!-- MOQ -->
-    <div class="fgroup">
-      <div class="fgroup-title">最低訂購量 MOQ</div>
-      <div class="chips" id="moqChips">
-        <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
-        <button class="chip" data-moq="100" onclick="pickMoq('100')">≤ 100</button>
-        <button class="chip" data-moq="300" onclick="pickMoq('300')">≤ 300</button>
-        <button class="chip" data-moq="500" onclick="pickMoq('500')">≤ 500</button>
-        <button class="chip" data-moq="1000" onclick="pickMoq('1000')">≤ 1000</button>
-      </div>
     </div>
 
     <!-- 交期 -->
@@ -933,6 +955,23 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <div class="active-chips" id="activeChips"></div>
     </div>
     <div class="res-remark" id="resRemark" style="display:none">註：未篩選 MOQ 時，卡片價格以 500 份報價為基準，若無 500 份報價資料，則取該單品最小 MOQ 的報價</div>
+
+    <!-- 客戶單品預算（2026-07-20 改版：第二層篩選，比對基準依 MOQ 動態切換）-->
+    <div class="budget-banner" id="budgetBanner">
+      <div class="budget-banner-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.3c-.5-.9-1.4-1.3-2.5-1.3-1.4 0-2.5.8-2.5 1.9s1.1 1.6 2.5 1.9 2.5.8 2.5 1.9-1.1 1.9-2.5 1.9c-1.1 0-2-.4-2.5-1.3"/><path d="M12 6.2v11.6"/></svg>
+        客戶單品預算
+      </div>
+      <div class="chips budget-banner-chips" id="budgetChips">
+        <button class="chip" data-budget="u100"     onclick="toggleBudget('u100')">NT$100 以下</button>
+        <button class="chip" data-budget="100-200"  onclick="toggleBudget('100-200')">NT$100–200</button>
+        <button class="chip" data-budget="200-300"  onclick="toggleBudget('200-300')">NT$200–300</button>
+        <button class="chip" data-budget="300-400"  onclick="toggleBudget('300-400')">NT$300–400</button>
+        <button class="chip" data-budget="400-500"  onclick="toggleBudget('400-500')">NT$400–500</button>
+        <button class="chip" data-budget="500-1000" onclick="toggleBudget('500-1000')">NT$500–1000</button>
+        <button class="chip" data-budget="o1000"    onclick="toggleBudget('o1000')">NT$1000 以上</button>
+      </div>
+    </div>
 
     <!-- states -->
     <div class="loading" id="stateLoading">
@@ -996,21 +1035,26 @@ const EXPORT_SHEET_URL  = 'https://docs.google.com/spreadsheets/d/1nzNcaul4ToETE
 // 快取 10 分鐘；業助改完資料想立即確認，可在瀏覽器開此網址並加上 &fresh=1
 const DATA_API_URL = EXPORT_WEBAPP_URL + '?data=products';
 
-// 預算篩選：以 price_max（小量採購報價）為基準
+// 預算篩選（2026-07-20 改版）：七區間，比對基準依 MOQ 動態切換（見 budgetBasis）
 const BUDGET_OPTS = [
-  { id: 'u100',    label: 'NT$100 以下', max: 100,      min: 0 },
-  { id: '100-200', label: 'NT$100–200',  max: 200,      min: 101 },
-  { id: '200-300', label: 'NT$200–300',  max: 300,      min: 201 },
-  { id: '300-400', label: 'NT$300–400',  max: 400,      min: 301 },
-  { id: '400-500', label: 'NT$400–500',  max: 500,      min: 401 },
-  { id: 'o500',    label: 'NT$500 以上', max: Infinity, min: 501 },
+  { id: 'u100',     label: 'NT$100 以下',  min: 0,    max: 100 },
+  { id: '100-200',  label: 'NT$100–200',   min: 101,  max: 200 },
+  { id: '200-300',  label: 'NT$200–300',   min: 201,  max: 300 },
+  { id: '300-400',  label: 'NT$300–400',   min: 301,  max: 400 },
+  { id: '400-500',  label: 'NT$400–500',   min: 401,  max: 500 },
+  { id: '500-1000', label: 'NT$500–1000',  min: 501,  max: 1000 },
+  { id: 'o1000',    label: 'NT$1000 以上', min: 1001, max: Infinity },
 ];
+// MOQ 篩選（2026-07-20 改版）：精確訂購數量，對應 priceNote 級距；
+// 選項來自資料庫實際存在的級距（50/100/200/300/500/1000），勿憑空增減
 const MOQ_OPTS = [
-  { id: 'all',  label: '不限',   max: Infinity },
-  { id: '100',  label: '≤ 100',  max: 100 },
-  { id: '300',  label: '≤ 300',  max: 300 },
-  { id: '500',  label: '≤ 500', max: 500 },
-  { id: '1000', label: '≤ 1000', max: 1000 },
+  { id: 'all',  label: '不限', qty: null },
+  { id: '50',   label: '50',   qty: 50 },
+  { id: '100',  label: '100',  qty: 100 },
+  { id: '200',  label: '200',  qty: 200 },
+  { id: '300',  label: '300',  qty: 300 },
+  { id: '500',  label: '500',  qty: 500 },
+  { id: '1000', label: '1000', qty: 1000 },
 ];
 
 // ════════════════════════════════════
@@ -1143,26 +1187,57 @@ function lowestPrice(priceStr) {
 }
 
 // ════════════════════════════════════
-// 篩選邏輯
+// 篩選邏輯（2026-07-20 改版：雙層價格篩選）
 // ════════════════════════════════════
-// price_min ≤ 上限：大量時有機會壓到預算 → 偏寬鬆，業務靠 priceNote 自判
-// NT$500以上：price_max ≥ 500，確保高單價商品能被找到
+// 取商品在目前選定 MOQ 級距的報價字串（精確比對 priceNote 的 qty）；
+// 未選 MOQ 或無對應級距 → 回傳 null
+function getTierPrice(p) {
+  if (selMoq === 'all') return null;
+  const qty = MOQ_OPTS.find(m => m.id === selMoq).qty;
+  const tier = parsePriceNote(p.priceNote).find(t => t.qty === qty);
+  return tier ? tier.price : null;
+}
+
+// 預算比對基準（雙基準規則，2026-07-20 定案）：
+// 未選 MOQ → 用 price 欄（500 份基準；spec 規定無 500 份資料時該欄為最小 MOQ 報價）
+// 已選 MOQ → 用該級距報價；無對應級距 → 回傳 null
+// 範圍值（如 65-75）取最低值比對，與排序基準一致
+function budgetBasis(p) {
+  if (selMoq === 'all') {
+    const v = lowestPrice(p.price);
+    return v != null ? v : (p.price_max || null);
+  }
+  const tp = getTierPrice(p);
+  return tp ? lowestPrice(tp) : null;
+}
+
 function matchBudget(p) {
   if (selBudgets.size === 0) return true;
+  const basis = budgetBasis(p);
+  // 已選 MOQ 但無對應級距 → 不排除（B 方案：卡片顯示「此 MOQ 無對應報價」，業務自判）
+  if (basis == null) return selMoq !== 'all';
   return [...selBudgets].some(id => {
     const opt = BUDGET_OPTS.find(b => b.id === id);
     if (!opt) return false;
-    if (opt.id === 'o500') return p.price_min >= 501;
-    if (opt.min === 0)     return p.price_min <= opt.max;
-    return p.price_min >= opt.min && p.price_min <= opt.max;
+    return basis >= opt.min && basis <= opt.max;
   });
 }
+
+// MOQ 篩選：業務指定訂購數量，排除起訂量（moq 欄）高於該數量的商品
 function matchMoq(moq) {
-  return moq <= MOQ_OPTS.find(m => m.id === selMoq).max;
+  const opt = MOQ_OPTS.find(m => m.id === selMoq);
+  if (!opt || opt.qty == null) return true;
+  return moq <= opt.qty;
 }
-// 排序基準：卡片主要顯示價格（price，500份報價）的最低值；
-// price 缺值時退回 price_max，再缺值排最後
+
+// 排序基準：未選 MOQ → price（500 份基準）最低值；已選 MOQ → 該級距報價最低值
+// 無對應級距或無價格 → Infinity 沉底（僅適用現行「低到高」排序；
+// 未來若加「高到低」排序，無報價商品須改為恆沉底，不能沿用 Infinity）
 function priceSortKey(p) {
+  if (selMoq !== 'all') {
+    const tp = getTierPrice(p);
+    return tp ? lowestPrice(tp) : Infinity;
+  }
   const v = lowestPrice(p.price);
   if (v != null) return v;
   return p.price_max || Infinity;
@@ -1313,7 +1388,13 @@ function render() {
 
   document.getElementById('clearBtn').disabled = !hasFilter;
   document.getElementById('resCount').innerHTML = `找到 <b>${filtered.length}</b> 項商品`;
-  document.getElementById('resRemark').style.display = filtered.length > 0 ? '' : 'none';
+
+  // 說明文字動態切換（2026-07-20 改版）：已選 MOQ 顯示該級距基準，未選顯示 500 份基準說明
+  const remark = document.getElementById('resRemark');
+  remark.textContent = selMoq !== 'all'
+    ? `註：價格以 ${MOQ_OPTS.find(m => m.id === selMoq).qty} 份報價為基準`
+    : '註：未篩選 MOQ 時，卡片價格以 500 份報價為基準，若無 500 份報價資料，則取該單品最小 MOQ 的報價';
+  remark.style.display = filtered.length > 0 ? '' : 'none';
 
   // active chips
   const achip = document.getElementById('activeChips');
@@ -1384,8 +1465,18 @@ function render() {
         </div>
         <div class="card-price">
           <div class="card-price-row">
-            <span class="card-price-main">NT$${formatPrice(p.price) || p.price_max}</span>
-            ${p.price_min && p.price_min < p.price_max ? `<span class="card-price-min">NT$${p.price_min}起</span>` : ''}
+            ${(() => {
+              // 2026-07-20 改版：已選 MOQ → 顯示對應級距價、隱藏灰字「起」價；
+              // 無對應級距 → 顯示標註（B 方案）。未選 MOQ → 維持原雙價格顯示
+              if (selMoq !== 'all') {
+                const tp = getTierPrice(p);
+                return tp
+                  ? `<span class="card-price-main">NT$${formatPrice(tp)}</span>`
+                  : `<span class="card-price-noquote">此 MOQ 無對應報價</span>`;
+              }
+              return `<span class="card-price-main">NT$${formatPrice(p.price) || p.price_max}</span>
+            ${p.price_min && p.price_min < p.price_max ? `<span class="card-price-min">NT$${p.price_min}起</span>` : ''}`;
+            })()}
           </div>
         </div>
         <div class="card-meta">
@@ -1671,6 +1762,24 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
 }
+
+// ════════════════════════════════════
+// 預算橫幅吸頂偵測（2026-07-20 試做版）
+// 吸住 topbar 下方時加上 .stuck 縮薄；效果不佳可整段刪除，橫幅仍會正常 sticky
+// ════════════════════════════════════
+(() => {
+  const banner = document.getElementById('budgetBanner');
+  if (!banner) return;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      banner.classList.toggle('stuck', banner.getBoundingClientRect().top <= 107);
+      ticking = false;
+    });
+  }, { passive: true });
+})();
 
 // ════════════════════════════════════
 // Init
