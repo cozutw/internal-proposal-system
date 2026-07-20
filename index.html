@@ -37,6 +37,9 @@
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { min-height: 100%; }
+/* 2026-07-20：永遠保留垂直捲軸空間，避免篩選後結果變少、頁面變短時
+   捲軸消失導致內容橫向跳動（例如 MOQ=50 只剩 1 項商品時最明顯）*/
+html { overflow-y: scroll; scrollbar-gutter: stable; }
 body {
   font-family: var(--font);
   font-size: 13px;
@@ -140,7 +143,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Rail ── */
 .rail {
   position: sticky;
-  top: 106px;
+  top: 106px; /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
   padding: 24px 0;
 }
 .rail-head {
@@ -259,7 +262,7 @@ a { color: inherit; text-decoration: none; }
 /* ── 客戶單品預算橫幅（2026-07-20 改版：第二層篩選）── */
 .budget-banner {
   position: sticky;
-  top: 106px;              /* 吸在 topbar 下方，與 rail 的 top 對齊 */
+  top: 106px;              /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
   z-index: 5;              /* 低於 topbar(10) */
   background: #faf5f0;
   border-radius: 8px;
@@ -599,6 +602,10 @@ a { color: inherit; text-decoration: none; }
 .price-tier-row:last-of-type { border-bottom: none; }
 .price-tier-qty { color: var(--ink-2); }
 .price-tier-price { font-weight: 600; color: var(--ink); }
+/* 2026-07-20：高亮目前選定 MOQ 對應的級距列，跟上方主要價格對照 */
+.price-tier-row-active { background: #faf5f0; }
+.price-tier-row-active .price-tier-qty { color: #b08d57; font-weight: 700; }
+.price-tier-row-active .price-tier-price { color: #b08d57; }
 .price-tier-more {
   display: block;
   padding: 7px 12px;
@@ -882,7 +889,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 
     <!-- MOQ（2026-07-20 改版：第一層篩選，精確訂購數量；移至 rail 第一位）-->
     <div class="fgroup">
-      <div class="fgroup-title">訂購數量 MOQ</div>
+      <div class="fgroup-title">訂購數量</div>
       <div class="chips" id="moqChips">
         <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
         <button class="chip" data-moq="50"   onclick="pickMoq('50')">50</button>
@@ -900,16 +907,16 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <div id="matOpts"></div>
     </div>
 
-    <!-- 交期 -->
+    <!-- 交期（2026-07-20 改版：與材質/場合等統一改 checkbox 樣式，多選）-->
     <div class="fgroup" id="leadGroup" style="display:none">
       <div class="fgroup-title">交期</div>
-      <div class="chips" id="leadChips"></div>
+      <div id="leadOpts"></div>
     </div>
 
-    <!-- 庫存狀態 -->
+    <!-- 庫存狀態（2026-07-20 改版：改 checkbox 樣式，多選）-->
     <div class="fgroup" id="stockGroup" style="display:none">
       <div class="fgroup-title">庫存狀態</div>
-      <div class="chips" id="stockChips"></div>
+      <div id="stockOpts"></div>
     </div>
 
     <!-- 場合 -->
@@ -1261,12 +1268,14 @@ function getFiltered() {
 // 動態計算 counts（只算目前篩選下的）
 // ════════════════════════════════════
 function computeCounts() {
-  const c = { mat: {}, theme: {}, ind: {}, tag: {} };
+  const c = { mat: {}, theme: {}, ind: {}, tag: {}, lead: {}, stock: {} };
   products.forEach(p => {
     getMats(p).forEach(m => c.mat[m] = (c.mat[m] || 0) + 1);
     p.themes.forEach(t => c.theme[t] = (c.theme[t] || 0) + 1);
     p.industries.forEach(i => c.ind[i] = (c.ind[i] || 0) + 1);
     if (p.tag) c.tag[p.tag] = (c.tag[p.tag] || 0) + 1;
+    if (p.lead_time) c.lead[p.lead_time] = (c.lead[p.lead_time] || 0) + 1;
+    if (p.in_stock)  c.stock[p.in_stock] = (c.stock[p.in_stock] || 0) + 1;
   });
   return c;
 }
@@ -1305,18 +1314,6 @@ function buildCheckGroup(containerId, options, selSet, counts, onToggle) {
   });
 }
 
-function buildChipGroup(containerId, options, selSet, onToggle) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = '';
-  options.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'chip' + (selSet.has(opt) ? ' on' : '');
-    btn.textContent = opt;
-    btn.addEventListener('click', () => onToggle(opt));
-    el.appendChild(btn);
-  });
-}
-
 // 交期／庫存的顯示順序偏好：資料庫出現的值照這個順序排，
 // 不在清單裡的值排在後面（照字典序），確保新增選項也不會被藏起來
 const LEAD_ORDER  = ['十天內', '2週', '3週', '1個月', '一個月內', '1.5個月', '2個月', '兩個月內'];
@@ -1344,8 +1341,8 @@ function buildRail() {
   const stockVals = getDynamicVals('in_stock',  STOCK_ORDER);
   document.getElementById('leadGroup').style.display  = leadVals.length  ? '' : 'none';
   document.getElementById('stockGroup').style.display = stockVals.length ? '' : 'none';
-  buildChipGroup('leadChips',  leadVals,  selLeads,  v => toggle(selLeads,  v, render));
-  buildChipGroup('stockChips', stockVals, selStocks, v => toggle(selStocks, v, render));
+  buildCheckGroup('leadOpts',  leadVals,  selLeads,  counts.lead,  v => toggle(selLeads,  v, render));
+  buildCheckGroup('stockOpts', stockVals, selStocks, counts.stock, v => toggle(selStocks, v, render));
 }
 
 function toggle(set, val, cb) {
@@ -1681,15 +1678,26 @@ function openPeek(p) {
     <div class="peek-name">${p.name}</div>
     <div class="peek-price">
       <div class="peek-price-row">
-        <span class="peek-price-main">NT$${formatPrice(p.price) || p.price_max}</span>
-        ${p.price_min && p.price_min < p.price_max ? `<span class="peek-price-min">NT$${p.price_min}起</span>` : ''}
+        ${(() => {
+          // 2026-07-20 改版：Panel 主要價格跟卡片邏輯一致，不再固定顯示 500 份
+          if (selMoq !== 'all') {
+            const tp = getTierPrice(p);
+            return tp
+              ? `<span class="peek-price-main">NT$${formatPrice(tp)}</span>`
+              : `<span class="card-price-noquote">此 MOQ 無對應報價</span>`;
+          }
+          return `<span class="peek-price-main">NT$${formatPrice(p.price) || p.price_max}</span>
+          ${p.price_min && p.price_min < p.price_max ? `<span class="peek-price-min">NT$${p.price_min}起</span>` : ''}`;
+        })()}
       </div>
 
       ${(() => {
         const tiers = parsePriceNote(p.priceNote);
         if (!tiers.length) return p.priceNote ? `<div class="peek-price-note" style="margin-top:4px">${p.priceNote}</div>` : '';
+        // 已選 MOQ 時，高亮對應級距那一列，方便跟上方主要價格對照
+        const selQty = selMoq !== 'all' ? MOQ_OPTS.find(m => m.id === selMoq).qty : null;
         const rows = tiers.map(t =>
-          `<div class="price-tier-row"><span class="price-tier-qty">${t.qty.toLocaleString()}份</span><span class="price-tier-price">NT$${t.price}</span></div>`
+          `<div class="price-tier-row${t.qty === selQty ? ' price-tier-row-active' : ''}"><span class="price-tier-qty">${t.qty.toLocaleString()}份</span><span class="price-tier-price">NT$${t.price}</span></div>`
         ).join('');
         const QUOTATION_URL = 'https://docs.google.com/spreadsheets/d/1Ng0iHDlKDWyTRi8FJVd1kJDroKCu28700F1RXP3eMZE/edit?gid=1377754576#gid=1377754576';
         return `<div class="price-tier-table">${rows}<a class="price-tier-more" href="${QUOTATION_URL}" target="_blank" rel="noopener noreferrer"><div class="price-tier-more-inner"><span>1000份以上量大另議</span><span>→</span></div></a></div>`;
@@ -1764,21 +1772,36 @@ function switchTab(tab) {
 }
 
 // ════════════════════════════════════
-// 預算橫幅吸頂偵測（2026-07-20 試做版）
-// 吸住 topbar 下方時加上 .stuck 縮薄；效果不佳可整段刪除，橫幅仍會正常 sticky
+// Sticky 對齊（2026-07-20）：rail／預算橫幅的吸頂位置改為實測 topbar 高度，
+// 取代原本寫死的 106px（誤差在透明背景的 rail 上看不出來，
+// 但在有底色的 banner 上會露出空隙，故改為動態量測避免誤差）
 // ════════════════════════════════════
 (() => {
+  const topbar = document.querySelector('.topbar');
+  const rail   = document.getElementById('railGift');
   const banner = document.getElementById('budgetBanner');
-  if (!banner) return;
-  let ticking = false;
-  window.addEventListener('scroll', () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      banner.classList.toggle('stuck', banner.getBoundingClientRect().top <= 107);
-      ticking = false;
-    });
-  }, { passive: true });
+  if (!topbar) return;
+
+  function syncStickyTop() {
+    const h = topbar.offsetHeight + 'px';
+    if (rail)   rail.style.top   = h;
+    if (banner) banner.style.top = h;
+  }
+  syncStickyTop();
+  window.addEventListener('resize', syncStickyTop);
+
+  // 預算橫幅吸頂偵測：吸住時加 .stuck 縮薄（試做版，效果不佳可整段刪除，橫幅仍會正常 sticky）
+  if (banner) {
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        banner.classList.toggle('stuck', banner.getBoundingClientRect().top <= topbar.offsetHeight + 1);
+        ticking = false;
+      });
+    }, { passive: true });
+  }
 })();
 
 // ════════════════════════════════════
