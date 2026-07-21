@@ -257,7 +257,7 @@ a { color: inherit; text-decoration: none; }
 }
 .res-count { font-size: 13px; color: var(--ink); white-space: nowrap; }
 .res-count b { font-weight: 700; }
-.res-remark { font-size: 12px; color: var(--ink-2); margin-top: 4px; margin-bottom: 20px; }
+/* res-remark 已於 2026-07-20 移除：基準說明併入預算橫幅標題（#budgetBasis） */
 
 /* ── 客戶單品預算橫幅（2026-07-20 改版：第二層篩選）── */
 .budget-banner {
@@ -283,12 +283,24 @@ a { color: inherit; text-decoration: none; }
   color: #232A31;
 }
 .budget-banner-title svg { width: 15px; height: 15px; color: inherit; }
+/* 基準說明（2026-07-20：原 res-remark 併入，常駐顯示目前價格基準）*/
+.budget-basis-sep { color: var(--ink-2); font-weight: 400; }
+.budget-basis { font-size: 12px; font-weight: 400; color: var(--ink-2); }
 .budget-banner-chips { justify-content: center; }
 .budget-banner .chip { background: #fff; padding: 5px 14px; font-size: 12px; }
 .budget-banner .chip.on { background: var(--ink); border-color: var(--ink); }
-/* 吸頂時縮薄：隱藏標題、縮小內距、四角圓角歸零（試做版，效果不佳可整段移除 .stuck 規則）*/
+/* 吸頂時縮薄：隱藏名稱與圖示、保留基準小字（2026-07-20 修訂：原版整行標題藏掉，
+   捲動深處反而失去「眼前價格是什麼基準」的脈絡，故改為只藏名稱）*/
 .budget-banner.stuck { padding: 8px 20px; border-radius: 0; }
-.budget-banner.stuck .budget-banner-title { display: none; }
+.budget-banner.stuck .budget-banner-title svg,
+.budget-banner.stuck .budget-banner-name,
+.budget-banner.stuck .budget-basis-sep { display: none; }
+/* 切換 MOQ 時的一次性提示：背景短暫加深，讓「剛剛的動作影響了這裡」被看見 */
+@keyframes budgetFlash {
+  0%   { background: #E4E0D8; }
+  100% { background: #F5F5F5; }
+}
+.budget-banner.flash { animation: budgetFlash .6s ease-out; }
 
 /* 選定 MOQ 但商品無對應級距報價的標註（視覺樣式第一版，待 Can 調整）*/
 .card-price-noquote { font-size: 12px; font-weight: 600; color: #b08d57; }
@@ -951,13 +963,14 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <span class="res-count" id="resCount"></span>
       <div class="active-chips" id="activeChips"></div>
     </div>
-    <div class="res-remark" id="resRemark" style="display:none">註：未篩選 MOQ 時，卡片價格以 500 份報價為基準，若無 500 份報價資料，則取該單品最小 MOQ 的報價</div>
-
-    <!-- 客戶單品預算（2026-07-20 改版：第二層篩選，比對基準依 MOQ 動態切換）-->
+    <!-- 客戶單品預算（2026-07-20 改版：第二層篩選，比對基準依 MOQ 動態切換；
+         基準說明常駐於橫幅標題，原 res-remark 灰字已併入此處）-->
     <div class="budget-banner" id="budgetBanner">
       <div class="budget-banner-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13C13.2386 13 11 11.8807 11 10.5C11 9.11929 13.2386 8 16 8C18.7614 8 21 9.11929 21 10.5C21 11.8807 18.7614 13 16 13Z"/><path d="M11 14.5C11 15.8807 13.2386 17 16 17C18.7614 17 21 15.8807 21 14.5"/><path d="M3 9.5C3 10.8807 5.23858 12 8 12C9.12583 12 10.1647 11.814 11.0005 11.5"/><path d="M3 13C3 14.3807 5.23858 15.5 8 15.5C9.12561 15.5 10.1643 15.314 11 15.0002"/><path d="M3 5.5V16.5C3 17.8807 5.23858 19 8 19C9.12563 19 10.1643 18.8139 11 18.5"/><path d="M13 8.5V5.5"/><path d="M11 10.5V18.5C11 19.8807 13.2386 21 16 21C18.7614 21 21 19.8807 21 18.5V10.5"/><path d="M8 8C5.23858 8 3 6.88071 3 5.5C3 4.11929 5.23858 3 8 3C10.7614 3 13 4.11929 13 5.5C13 6.88071 10.7614 8 8 8Z"/></svg>
-        客戶單品預算
+        <span class="budget-banner-name">客戶單品預算</span>
+        <span class="budget-basis-sep">·</span>
+        <span class="budget-basis" id="budgetBasis">以 500 份報價為基準</span>
       </div>
       <div class="chips budget-banner-chips" id="budgetChips">
         <button class="chip" data-budget="u100"     onclick="toggleBudget('u100')">NT$100 以下</button>
@@ -1363,6 +1376,13 @@ function pickMoq(id) {
     b.classList.toggle('on', b.dataset.moq === id);
   });
   render();
+  // 一次性提示：切換 MOQ 時預算橫幅短暫閃動，標示兩者聯動（MOQ 多為開場設定一次，故僅輕量提示）
+  const banner = document.getElementById('budgetBanner');
+  if (banner) {
+    banner.classList.remove('flash');
+    void banner.offsetWidth; // 強制 reflow，讓連續切換也能重播動畫
+    banner.classList.add('flash');
+  }
 }
 
 // ════════════════════════════════════
@@ -1376,12 +1396,11 @@ function render() {
   document.getElementById('clearBtn').disabled = !hasFilter;
   document.getElementById('resCount').innerHTML = `找到 <b>${filtered.length}</b> 項商品`;
 
-  // 說明文字動態切換（2026-07-20 改版）：已選 MOQ 顯示該級距基準，未選顯示 500 份基準說明
-  const remark = document.getElementById('resRemark');
-  remark.textContent = selMoq !== 'all'
-    ? `註：價格以 ${MOQ_OPTS.find(m => m.id === selMoq).qty} 份報價為基準`
-    : '註：未篩選 MOQ 時，卡片價格以 500 份報價為基準，若無 500 份報價資料，則取該單品最小 MOQ 的報價';
-  remark.style.display = filtered.length > 0 ? '' : 'none';
+  // 基準說明（2026-07-20 修訂）：常駐於預算橫幅標題，隨 MOQ 動態切換；
+  // 未選 MOQ 時附註 500 份缺資料的遞補規則（原 res-remark 內容併入此處）
+  document.getElementById('budgetBasis').textContent = selMoq !== 'all'
+    ? `以 ${MOQ_OPTS.find(m => m.id === selMoq).qty} 份報價為基準`
+    : '以 500 份報價為基準（無 500 份資料時取最小 MOQ 報價）';
 
   // active chips
   const achip = document.getElementById('activeChips');
