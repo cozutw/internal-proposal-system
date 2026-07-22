@@ -1543,24 +1543,27 @@ function onCustomerNameInput() {
 }
 
 // ════════════════════════════════════
-// 匯出清單（doPost 串接）
+// 匯出清單（doPost 串接，方案A：doPost 寫入後立即呼叫客戶帳號腳本生成，
+// 全程結果都留在同一個彈出分頁內顯示，不再導向待匯出 Sheet）
+//
+// 2026-07-22 本版更新：
+// - 拿掉「成功就導向 EXPORT_SHEET_URL」的舊行為，改為讀取 doPost 新回傳的
+//   result.generation（{status, url, notFound}）與 result.exportSheetUrl
+// - 三種結果狀態分開處理，訊息與是否附待匯出 Sheet 連結依實際情況而定：
+//   1) 生成成功 → 顯示簡報連結＋複製按鈕
+//   2) 資料已寫入但生成逾時/失敗 → 顯示「請改由手動重新匯出」＋待匯出 Sheet 連結
+//   3) 送出本身就失敗（密語/格式錯，尚未寫入）→ 顯示錯誤，不給 Sheet 連結
+//   4) fetch 例外（無法確認是否寫入）→ 顯示連線異常，Sheet 連結僅供保險確認
+// - 原本主頁面的 showExportError（toast）已移除，所有狀態改在彈出分頁顯示
 // ════════════════════════════════════
-async function handleExport() {
-  if (selectedIds.size === 0 || !customerName) return;
 
-  // 一定要在這裡（使用者點擊的當下、await 之前）同步呼叫 window.open，
-  // 不然瀏覽器的彈出視窗攔截器會擋掉之後才開的分頁
-  const popup = window.open('', '_blank');
-
-  // 立刻在空白分頁裡寫入等待畫面：
-  // GAS Web App 回應通常需要數秒（冷啟動更久），這段延遲無法消除，
-  // 但可以避免業務看到一片 about:blank 以為系統壞掉
-  if (popup) {
-    popup.document.write(`<!DOCTYPE html>
+// 彈出分頁共用的畫面外殼（沿用原本等待畫面的字體/配色，只替換內容）
+function popupShell_(bodyHtml) {
+  return `<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<title>正在整理禮贈商品</title>
+<title>COZU 提案匯出</title>
 <style>
   body {
     margin: 0;
@@ -1573,6 +1576,9 @@ async function handleExport() {
     font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
     background: #faf9f7;
     color: #333;
+    padding: 24px;
+    box-sizing: border-box;
+    text-align: center;
   }
   .spinner {
     width: 48px;
@@ -1584,17 +1590,114 @@ async function handleExport() {
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   h1 { font-size: 20px; font-weight: 600; margin: 0; }
-  p  { font-size: 14px; color: #888; margin: 0; }
+  p  { font-size: 14px; color: #888; margin: 0; max-width: 360px; }
+  .meta { font-size: 13px; color: #999; margin: 0; }
+  .link-btn {
+    margin-top: 8px;
+    display: inline-block;
+    background: #8a7a5c;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .copy-btn {
+    margin-top: 4px;
+    background: #fff;
+    color: #8a7a5c;
+    border: 1px solid #d4cdbf;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: #f5f2ec; }
+  .warn { font-size: 12px; color: #b45309; max-width: 360px; }
+  .sheet-link { color: #8a7a5c; font-size: 13px; text-decoration: underline; }
 </style>
 </head>
 <body>
-  <div class="spinner"></div>
-  <h1>正在整理禮贈商品</h1>
-  <p>完成後會自動開啟「待匯出」清單，約需5秒時間，請不要關閉此分頁</p>
+  ${bodyHtml}
 </body>
-</html>`);
-    popup.document.close();
-  }
+</html>`;
+}
+
+function writePopup_(popup, bodyHtml) {
+  if (!popup) return;
+  popup.document.write(popupShell_(bodyHtml));
+  popup.document.close();
+}
+
+// 狀態一：等待畫面（分頁開啟瞬間立刻顯示，含客戶名稱＋商品數量的安全網）
+function renderPopupLoading_(popup, customer, count) {
+  writePopup_(popup, `
+    <div class="spinner"></div>
+    <h1>正在生成提案簡報...</h1>
+    <p class="meta">客戶：${customer}　商品：${count} 件</p>
+    <p>請勿關閉此分頁，通常需要 20–40 秒</p>
+  `);
+}
+
+// 狀態二：生成成功（資料已寫入、簡報已產出）
+function renderPopupSuccess_(popup, url, notFound, customer, count) {
+  const warnHtml = (notFound && notFound.length > 0)
+    ? `<p class="warn">⚠️ 部分商品找不到對應頁面：${notFound.join('、')}</p>`
+    : '';
+  writePopup_(popup, `
+    <h1>已產生提案簡報 🎉</h1>
+    <p class="meta">客戶：${customer}　商品：${count} 件</p>
+    <a class="link-btn" href="${url}" target="_blank" rel="noopener noreferrer">開啟簡報</a>
+    <button class="copy-btn" onclick="
+      navigator.clipboard.writeText('${url}').then(() => {
+        this.textContent = '已複製連結';
+        setTimeout(() => { this.textContent = '複製連結'; }, 1600);
+      });
+    ">複製連結</button>
+    ${warnHtml}
+  `);
+}
+
+// 狀態三：資料已寫入待匯出 Tab，但生成端逾時／失敗（可去待匯出 Sheet 手動救援）
+function renderPopupGenerationFailed_(popup, sheetUrl) {
+  writePopup_(popup, `
+    <h1>連線逾時</h1>
+    <p>商品清單已成功寫入，但自動生成簡報逾時或發生錯誤，請改由手動重新匯出。</p>
+    <a class="link-btn" href="${sheetUrl}" target="_blank" rel="noopener noreferrer">開啟待匯出 Sheet</a>
+  `);
+}
+
+// 狀態四：送出本身就失敗（密語或格式錯誤，資料尚未寫入，不給 Sheet 連結）
+function renderPopupSubmitFailed_(popup, message) {
+  writePopup_(popup, `
+    <h1>送出失敗</h1>
+    <p>${message}</p>
+    <p style="font-size:12px;color:#aaa;">請關閉此分頁，回到主畫面重新按一次匯出</p>
+  `);
+}
+
+// 狀態五：連線本身出錯（fetch 失敗，無法確認資料是否寫入）
+function renderPopupNetworkError_(popup, sheetUrl) {
+  writePopup_(popup, `
+    <h1>連線異常</h1>
+    <p>系統可能有網路連線問題，請確認網路後回到主畫面再試一次。</p>
+    <p style="font-size:12px;color:#aaa;">如果不確定資料是否已送出，也可以到待匯出 Sheet 確認看看：</p>
+    <a class="sheet-link" href="${sheetUrl}" target="_blank" rel="noopener noreferrer">開啟待匯出 Sheet</a>
+  `);
+}
+
+async function handleExport() {
+  if (selectedIds.size === 0 || !customerName) return;
+
+  // 一定要在這裡（使用者點擊的當下、await 之前）同步呼叫 window.open，
+  // 不然瀏覽器的彈出視窗攔截器會擋掉之後才開的分頁
+  const popup = window.open('', '_blank');
+
+  const count = selectedIds.size;
+  const customer = customerName;
+
+  renderPopupLoading_(popup, customer, count);
 
   const items = products
     .filter(p => selectedIds.has(p._id))
@@ -1615,23 +1718,22 @@ async function handleExport() {
     });
     const result = await res.json();
 
-    if (result.success) {
-      if (popup) popup.location.href = EXPORT_SHEET_URL;
+    if (!result.success) {
+      // 送出本身失敗（密語錯、格式錯），資料尚未寫入
+      renderPopupSubmitFailed_(popup, result.message || '送出失敗，請確認密語或資料格式');
+      return;
+    }
+
+    if (result.generation && result.generation.status === 'success') {
+      renderPopupSuccess_(popup, result.generation.url, result.generation.notFound, customer, count);
     } else {
-      if (popup) popup.close();
-      showExportError(result.message || '送出失敗，請確認密語或資料格式');
+      // 資料已寫入，但生成失敗或逾時
+      const sheetUrl = result.exportSheetUrl || EXPORT_SHEET_URL;
+      renderPopupGenerationFailed_(popup, sheetUrl);
     }
   } catch (err) {
-    if (popup) popup.close();
-    showExportError('系統可能有網路連線問題，請確認網路後再試一次');
+    renderPopupNetworkError_(popup, EXPORT_SHEET_URL);
   }
-}
-
-function showExportError(msg) {
-  const toast = document.getElementById('exportToast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
 // ════════════════════════════════════
