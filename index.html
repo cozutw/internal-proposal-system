@@ -1631,12 +1631,42 @@ function writePopup_(popup, bodyHtml) {
 }
 
 // 狀態一：等待畫面（分頁開啟瞬間立刻顯示，含客戶名稱＋商品數量的安全網）
+//
+// 2026-07-22 更新：標題改為輪播文字，依實際後續動作的大致順序輪替
+// （檢查清單→比對頁面→整理簡報→即將完成），每句停留 4.5 秒、循環播放。
+// ⚠️ 這些文字只是「安慰式進度指示」：前端與 doPost 之間全程只有一次
+// fetch 呼叫，中間沒有任何進度回報管道，輪播內容與後端實際進度無法
+// 保證同步，純粹用時間軸猜測讓等待畫面持續有變化，不代表真實階段。
+// 客戶名稱＋商品件數維持獨立、常駐顯示，不隨輪播被蓋掉。
 function renderPopupLoading_(popup, customer, count) {
   writePopup_(popup, `
     <div class="spinner"></div>
-    <h1>正在生成提案簡報...</h1>
+    <h1 id="loadingTitle">正在確認商品清單...</h1>
     <p class="meta">客戶：${customer}　商品：${count} 件</p>
-    <p>請勿關閉此分頁，通常需要 20–40 秒</p>
+    <p>過程中請勿關閉此分頁，通常需要 20–40 秒生成</p>
+    <script>
+      (function () {
+        var phrases = [
+          '正在確認商品清單...',
+          '正在比對簡報頁面...',
+          '正在整理提案簡報...',
+          '即將完成，請稍候...'
+        ];
+        var idx = 0;
+        var timer = setInterval(function () {
+          idx = (idx + 1) % phrases.length;
+          var el = document.getElementById('loadingTitle');
+          if (el) {
+            el.textContent = phrases[idx];
+          } else {
+            // 防禦性清除：理論上分頁內容被 writePopup_ 整個重寫時，
+            // 這個計時器所在的 script 環境會隨舊文件一起被拋棄而自動停止，
+            // 這裡额外清除只是保險，避免任何瀏覽器實作差異造成殘留。
+            clearInterval(timer);
+          }
+        }, 4500);
+      })();
+    <\/script>
   `);
 }
 
