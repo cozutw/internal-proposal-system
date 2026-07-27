@@ -1577,6 +1577,8 @@ function popupShell_(bodyHtml) {
     padding: 24px;
     box-sizing: border-box;
     text-align: center;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   .spinner {
     width: 48px;
@@ -1609,19 +1611,24 @@ function popupShell_(bodyHtml) {
     max-width: 360px;
   }
   .info-card {
+    position: relative;
+    overflow: visible;
     margin-top: 44px;
     display: inline-flex;
     align-items: center;
-    gap: 16px;
     background: #fff;
     border: 1px solid #E5E5E5;
     border-radius: 4px;
-    padding: 16px;
+    padding: 16px 16px 16px 0;
   }
+  /* 破格版：icon 脫離卡片版面流，左邊與底部各突出卡片外緣 30px
+     （61px 寬 - 30px 突出 = 31px 疊在卡片上；頂部超出量隨 70px 高度自然產生，不另外設定） */
   .info-card-icon {
+    position: absolute;
+    left: -30px;
+    bottom: -30px;
     width: 61px;
     height: 70px;
-    flex-shrink: 0;
   }
   .info-card-icon svg {
     display: block;
@@ -1636,6 +1643,7 @@ function popupShell_(bodyHtml) {
     color: #5B5B62;
     text-align: left;
     white-space: nowrap;
+    margin-left: 61px;
   }
   .link-btn {
     margin-top: 8px;
