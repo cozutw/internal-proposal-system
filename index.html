@@ -1317,7 +1317,7 @@ function buildCheckGroup(containerId, options, selSet, counts, onToggle) {
 
 // 交期／庫存的顯示順序偏好：資料庫出現的值照這個順序排，
 // 不在清單裡的值排在後面（照字典序），確保新增選項也不會被藏起來
-const LEAD_ORDER  = ['十天內', '2週', '3週', '1個月', '一個月內', '1.5個月', '2個月', '兩個月內'];
+const LEAD_ORDER  = ['10天', '30天', '45天', '60天', '90天'];
 const STOCK_ORDER = ['有現貨', '需洽詢', '需訂製'];
 
 // 從 products 動態取得某欄位所有不重複的值，依偏好順序排列
