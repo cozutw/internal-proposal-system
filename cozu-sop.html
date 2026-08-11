@@ -362,6 +362,7 @@ body {
 .field-owner.boss   { color: var(--role-boss);   background: #f0f0f0; }
 .field-owner.design { color: var(--role-design);  background: #edf7ef; }
 .field-owner.sales  { color: var(--role-sales);   background: #fef3e2; }
+.field-owner.toothpaste { color: var(--role-toothpaste); background: #e8f0fa; }
 
 code {
   font-family: "Mulish", monospace;
@@ -457,7 +458,7 @@ code {
             <div class="step-header">
               <div>
                 <div class="step-role boss">老闆</div>
-                <div class="step-title">決定該樣品是否上架</div>
+                <div class="step-title">決定該樣品是否上架系統與官網</div>
               </div>
             </div>
           </div>
@@ -503,11 +504,11 @@ code {
 
         <!-- Step 4 -->
         <div class="step">
-          <div class="step-line"><div class="step-num sales">4</div></div>
+          <div class="step-line"><div class="step-num toothpaste">4</div></div>
           <div class="step-body">
             <div class="step-header">
               <div>
-                <div class="step-role sales">業務助理</div>
+                <div class="step-role toothpaste">牙膏</div>
                 <div class="step-title">填寫大表補充資訊，並轉換建入小表資料庫</div>
               </div>
             </div>
@@ -520,11 +521,11 @@ code {
 
         <!-- Step 5 -->
         <div class="step">
-          <div class="step-line"><div class="step-num sales">5</div></div>
+          <div class="step-line"><div class="step-num toothpaste">5</div></div>
           <div class="step-body">
             <div class="step-header">
               <div>
-                <div class="step-role sales">業務助理</div>
+                <div class="step-role toothpaste">牙膏</div>
                 <div class="step-title-row">
                   <div class="step-title">驗收查詢系統資料顯示正確，並通知設計</div>
                   <span class="step-verify">第一次驗收</span>
@@ -547,11 +548,12 @@ code {
               <div>
                 <div class="step-role design">設計</div>
                 <div class="step-title-row">
-                  <div class="step-title">官網上架，並驗收查詢系統完整顯示</div>
+                  <div class="step-title">製作樣品對應投影片，若需要官網上架也一併進行，並驗收查詢系統完整顯示</div>
                   <span class="step-verify">第二次驗收</span>
                 </div>
               </div>
             </div>
+            <div class="step-sub">製作樣品對應投影片，並填入<a href="https://docs.google.com/spreadsheets/d/1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">小表</a>的 <code>slide_id</code></div>
             <div class="step-sub">將商品上架至 COZU 官網後，確認查詢系統的圖片、內容與官網資訊一致。</div>
           </div>
         </div>
@@ -590,27 +592,27 @@ code {
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">name</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">商品名稱</div>
-          <div class="field-note">中文為主，可含英文副標。來源：步驟 2 牙膏填寫品名，經步驟 4 業務助理轉入小表</div>
+          <div class="field-note">中文為主，可含英文副標。來源：步驟 2 牙膏填寫品名，經步驟 4 牙膏轉入小表</div>
         </div>
 
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">p_id</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">報價表編號</div>
-          <div class="field-note">對應大表商品編號，用於回查原始資料。來源：步驟 2 牙膏填寫編號，經步驟 4 業務助理轉入小表</div>
+          <div class="field-note">對應大表商品編號，用於回查原始資料。來源：步驟 2 牙膏填寫編號，經步驟 4 牙膏轉入小表</div>
         </div>
 
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">price</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">顯示價格（單一標價）</div>
           <div class="field-note">純數字，不含符號。來源：報價單報價欄</div>
@@ -619,7 +621,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">price_max</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">預算篩選上限</div>
           <div class="field-note">純數字。無上限可留空</div>
@@ -629,7 +631,7 @@ code {
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">price_min</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">預算篩選下限</div>
           <div class="field-note">純數字。無區間則與 price 同值</div>
@@ -638,7 +640,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">priceNote</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">各數量層級報價</div>
           <div class="field-note">各數量層級的完整報價，格式為 <code>數量:價格|數量:價格</code>，最多填到1000份為止，超過省略。<br>例：<code>200:85-95|500:65-75|1000:60-65</code></div>
@@ -647,7 +649,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">priceRemark</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">價格補充說明</div>
           <div class="field-note">備註補充說明。例：price_min以500份報價為基準、含印刷費、版費另計</div>
@@ -657,7 +659,7 @@ code {
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">moq</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">最低訂購量</div>
           <div class="field-note">純數字</div>
@@ -667,7 +669,7 @@ code {
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">material_category</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">材質大分類（影響篩選分類）</div>
           <div class="field-note">下拉選單，從以下選項擇一：</div>
@@ -688,7 +690,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">material</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">材質細節描述</div>
           <div class="field-note">填廠商提供的完整材質描述，作為 material_category 的補充說明。例：鈉鈣玻璃、304不鏽鋼、牛皮（植鞣革）</div>
@@ -697,7 +699,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">tag</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">標籤（單選）</div>
           <div class="field-note">只填一個，從下列選項擇一：</div>
@@ -712,7 +714,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">industries</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">適合產業（可多選）</div>
           <div class="field-note">多個以逗號分隔，從下列選項擇填：</div>
@@ -740,7 +742,7 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">lead_time</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">交期</div>
           <div class="field-note">下拉選單，從以下選項擇一（一律無空格，例：<code>10天</code> 不寫 <code>10 天</code>）：</div>
@@ -756,16 +758,16 @@ code {
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">sample_location</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">樣品擺放位置</div>
-          <div class="field-note">無樣品時留空。來源：步驟 2 牙膏填寫樣品位置，經步驟 4 業務助理轉入小表。例：展示架 A3、倉庫B區第二層</div>
+          <div class="field-note">無樣品時留空。來源：步驟 2 牙膏填寫樣品位置，經步驟 4 牙膏轉入小表。例：展示架 A3、倉庫B區第二層</div>
         </div>
 
         <div class="field-row">
           <div class="field-name-row">
             <div class="field-name">in_stock</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">庫存狀態</div>
           <div class="field-note">下拉選單，從以下選項擇一：</div>
@@ -789,7 +791,7 @@ code {
           <div class="field-name-row">
             <div class="field-required"></div>
             <div class="field-name">last_updated_time</div>
-            <span class="field-owner sales">業務助理</span>
+            <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">最後更新時間</div>
           <div class="field-note">填上架當天日期，格式：<code>YYYY-MM-DD</code></div>
