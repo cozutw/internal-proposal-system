@@ -440,7 +440,6 @@ code {
     <div class="legend-item"><div class="legend-dot dot-boss"></div>老闆</div>
     <div class="legend-item"><div class="legend-dot dot-toothpaste"></div>牙膏</div>
     <div class="legend-item"><div class="legend-dot dot-design"></div>設計</div>
-    <div class="legend-item"><div class="legend-dot dot-sales"></div>業務助理</div>
   </div>
 
   <!-- Two-col -->
@@ -471,13 +470,14 @@ code {
             <div class="step-header">
               <div>
                 <div class="step-role toothpaste">牙膏</div>
-                <div class="step-title">填<a href="https://docs.google.com/spreadsheets/d/1nd-6QTqAC2OfcZGZKO4XC3XyVRra9BdtDL703nba-ms/edit?pli=1&gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>（填寫編號、品名、樣品位置），並把需要攝影的商品放在樣品室的待攝影區</div>
+                <div class="step-title">填<a href="https://docs.google.com/spreadsheets/d/1nd-6QTqAC2OfcZGZKO4XC3XyVRra9BdtDL703nba-ms/edit?pli=1&gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>（填寫編號、品名、樣品位置、照片狀態），並把需要攝影的商品放在樣品室的待攝影區</div>
               </div>
             </div>
             <ul class="step-sub-list">
               <li>編號</li>
               <li>品名</li>
               <li>樣品位置</li>
+              <li>照片狀態</li>
             </ul>
           </div>
         </div>
@@ -497,7 +497,7 @@ code {
               <li>將原始圖片存至 NAS 對應資料夾 - 【資訊共用文件夾 - 2026 新樣品照】</li>
               <li>將去背圖上傳至 Shopline 圖片庫，複製 URL</li>
               <li>將 Shopline URL 直接填回<a href="https://docs.google.com/spreadsheets/d/1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">小表</a>的 <code>image_url</code> 欄位</li>
-              <li>通知業務助理圖片已完成，可以開始建入查詢系統</li>
+              <li>通知牙膏圖片已完成，更改大表的照片狀態</li>
             </ul>
           </div>
         </div>
@@ -811,7 +811,7 @@ code {
 </div><!-- /shell -->
 
 <script>
-const LAST_UPDATED = '2026-08-06';
+const LAST_UPDATED = '2026-08-11';
 document.getElementById('lastUpdated').textContent = '最後更新 ' + LAST_UPDATED;
 document.getElementById('footerDate').textContent  = '最後更新：' + LAST_UPDATED;
 </script>
