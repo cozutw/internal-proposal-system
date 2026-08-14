@@ -326,12 +326,14 @@ a { color: inherit; text-decoration: none; }
 .achip button:hover { color: var(--ink); }
 
 /* ── Grid ── */
+/* 2026-08-14：一排 3 → 4 個實驗性調整（僅桌機使用，先試視覺效果） */
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
 }
-@media (max-width: 1100px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1300px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* ── Card ── */
 .card {
@@ -1100,28 +1102,6 @@ function parseProducts(items) {
   return items.map((item, idx) => {
     const get = k => String(item[k] ?? '').trim();
 
-    // proposals: 格式「公司名稱|場合|年份|selected（可空）|簡報URL（可空）」
-    // 第四欄若不是 'selected' 則視為 URL（兼容沒有補空欄的資料）
-    const proposalsRaw = get('proposals');
-    const proposals = proposalsRaw
-      ? proposalsRaw.split('\n').map(l => {
-          const parts    = l.trim().split('|');
-          const company  = (parts[0] || '').trim();
-          const occasion = (parts[1] || '').trim();
-          const year     = (parts[2] || '').trim();
-          const col3     = (parts[3] || '').trim();
-          const col4     = (parts[4] || '').trim();
-          const isSelected = col3.toLowerCase() === 'selected';
-          const selected   = isSelected;
-          const slide_url  = isSelected ? col4 : col3;
-          return { company, occasion, year, selected, slide_url };
-        }).filter(d => d.company)
-        .sort((a, b) => {
-          if (a.selected !== b.selected) return a.selected ? -1 : 1;
-          return parseInt(b.year) - parseInt(a.year);
-        })
-      : [];
-
     // 預算篩選用數值：price_max 取範圍起始值（"85-95" → 85）
     const priceRaw = get('price');
     const priceMax = parseFloat(get('price_max')) || parseFloat(priceRaw) || 0;
@@ -1141,13 +1121,11 @@ function parseProducts(items) {
       tag               : get('tag'),
       industries        : get('industries').split(',').map(s => s.trim()).filter(Boolean),
       themes            : [], // 資料庫無此欄位；保留空陣列讓主題篩選程式正常運作
-      nas_path          : '', // 中介層白名單不回傳（內部資訊）；Panel 會顯示預設路徑
       image_url         : get('image_url'),
       slide_id          : get('slide_id'),
       lead_time         : get('lead_time'),
       in_stock          : get('in_stock'),
       last_updated_time : get('last_updated_time'), // 中介層已輸出 YYYY-MM-DD
-      proposals,
     };
   }).filter(p => p.name);
 }
@@ -1449,16 +1427,6 @@ function render() {
       : `<img src="https://img.shoplineapp.com/media/image_clips/6a5dd3b30acad21c07a7949b/original.png?1784533939=&owner_id=58c5132a59d524173800069b" alt="尚未上傳圖片" />`;
 
 
-
-    const propCount    = p.proposals.length;
-    const selectedCount = p.proposals.filter(d => d.selected).length;
-
-    const proposalMeta = propCount > 0
-      ? selectedCount > 0
-        ? `<span class="meta-sep">•</span><span class="meta-selected"><span class="meta-selected-check">✓</span> 選中 ${selectedCount} 次</span><span class="meta-sep">•</span><span>${propCount} 筆提案</span>`
-        : `<span class="meta-sep">•</span><span>${propCount} 筆提案</span>`
-      : '';
-
     card.innerHTML = `
       <div class="card-img">
         <div class="card-checkbox${selectedIds.has(p._id) ? ' on' : ''}" onclick="toggleSelect(${p._id}, event)"></div>
@@ -1487,7 +1455,6 @@ function render() {
         </div>
         <div class="card-meta">
           <span>MOQ ${p.moq.toLocaleString()}</span>
-          ${proposalMeta}
         </div>
         <div class="card-tag-row">
           ${p.themes.slice(0,2).map(t => `<span class="mtag">${t}</span>`).join('')}
@@ -1961,30 +1928,10 @@ function clearAll() {
 // ════════════════════════════════════
 function openPeek(p) {
   const mats      = getMats(p);
-  const nas        = p.nas_path || `\\\\COZU-NAS\\提案資料\\禮贈品\\${p.name}`;
-  const proposals  = p.proposals;
 
   const imgHtml = p.image_url
     ? `<img src="${p.image_url}" alt="${p.name}" />`
     : `<img src="https://img.shoplineapp.com/media/image_clips/6a5dd3b30acad21c07a7949b/original.png?1784533939=&owner_id=58c5132a59d524173800069b" alt="尚未上傳圖片" />`;
-
-  const proposalsHtml = proposals.length > 0
-    ? proposals.map(d => `
-        <div class="deal-row${d.selected ? ' selected' : ''}">
-          <span class="deal-co">${d.company}</span>
-          <span class="deal-occ">· ${d.occasion}</span>
-          ${d.selected ? `<span class="deal-selected-badge">✓ 客戶選中</span>` : ''}
-          <span class="deal-yr">${d.year}</span>
-          ${d.slide_url
-            ? `<a class="slide-link" href="${d.slide_url}" target="_blank" rel="noopener noreferrer" style="margin-top:0;padding:3px 8px;font-size:11px;">
-                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;">
-                   <path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>
-                 </svg>
-                 簡報
-               </a>`
-            : ''}
-        </div>`).join('')
-    : `<div class="deal-empty">尚無提案紀錄</div>`;
 
   document.getElementById('peekBody').innerHTML = `
     <div class="peek-img">${imgHtml}</div>
@@ -2043,18 +1990,7 @@ function openPeek(p) {
       <div class="pills">${p.industries.map(i => `<span class="pill">${i}</span>`).join('')}</div>
     </div>
 
-    <div class="dl">
-      <div class="dl-title">提案紀錄</div>
-      ${proposalsHtml}
-    </div>
-
-    <div class="dl">
-      <div class="dl-title">NAS 資料路徑</div>
-      <div class="nas-box">
-        <span class="nas-path" id="nasPath">${nas}</span>
-        <button class="copy-btn" id="copyBtn" onclick="copyNas('${nas.replace(/'/g,"\\'")}')">複製</button>
-      </div>
-    </div>`;
+`;
 
   document.getElementById('scrim').style.display = 'block';
   document.getElementById('peek').style.display  = 'flex';
@@ -2065,15 +2001,6 @@ function closePeek() {
   document.getElementById('scrim').style.display = 'none';
   document.getElementById('peek').style.display  = 'none';
   document.body.style.overflow = '';
-}
-
-function copyNas(path) {
-  navigator.clipboard?.writeText(path).then(() => {
-    const btn = document.getElementById('copyBtn');
-    if (!btn) return;
-    btn.textContent = '已複製';
-    setTimeout(() => { if (document.getElementById('copyBtn')) btn.textContent = '複製'; }, 1400);
-  });
 }
 
 // ════════════════════════════════════
