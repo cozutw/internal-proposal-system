@@ -6,7 +6,7 @@
 <title>COZU 禮贈品查詢系統</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Mulish:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Mulish:wght@400;500;600;700&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
 <style>
 :root {
   /* ── Color: Text ── */
@@ -16,6 +16,7 @@
 
   /* ── Color: Background ── */
   --color-bg:             #ffffff;
+  --color-bg-page:        #fafafa;
   --color-bg-subtle:      #f7f7f7;
   --color-bg-hover:       #f0f0f0;
 
@@ -43,7 +44,7 @@ body {
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--color-bg-page);
   -webkit-font-smoothing: antialiased;
 }
 button { font-family: inherit; cursor: pointer; }
@@ -68,9 +69,18 @@ a { color: inherit; text-decoration: none; }
   height: 52px;
   gap: 12px;
 }
-.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand { display: flex; align-items: center; gap: 8px; }
 .brand-name { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
 .brand-sub { font-size: 11px; color: var(--ink-2); }
+.brand-text { display: flex; flex-direction: column; justify-content: center; }
+.brand-sub-en {
+  font-family: "Space Grotesk", var(--font);
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  letter-spacing: .03em;
+  margin-top: 2px;
+}
 .topbar-links { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .topbar-link-btn {
   display: inline-flex;
@@ -114,7 +124,7 @@ a { color: inherit; text-decoration: none; }
   white-space: nowrap;
 }
 .tab svg { width: 14px; height: 14px; }
-.tab.active { color: var(--ink); background: var(--bg); border-color: var(--line); }
+.tab.active { color: var(--ink); background: var(--color-bg-page); border-color: var(--line); }
 .tab.disabled { color: #ccc; cursor: default; }
 /* 2026-07-20：禮盒／獎座 tab 暫時隱藏（程式碼保留，要恢復顯示只需刪除下面這一行） */
 .tab.disabled { display: none; }
@@ -340,7 +350,7 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--bg);
+  background: var(--color-bg-page);
   overflow: hidden;
   cursor: pointer;
   text-align: left;
@@ -436,7 +446,13 @@ a { color: inherit; text-decoration: none; }
   padding: 1px 6px;
   white-space: nowrap;
 }
-.mtag-mat { background: #232A31; color: #fff; border-color: #232A31; }
+.mtag-mat {
+  background: #fff;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  border-radius: 2px;
+  padding: 0 4px 2px 4px;
+}
 .card-meta {
   font-size: 11px;
   color: var(--ink-2);
@@ -836,9 +852,12 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 <div class="topbar">
   <div class="topbar-inner">
     <div class="topbar-row1">
-      <div class="brand" style="gap:20px;">
+      <div class="brand" style="gap:16px;">
         <img src="https://img.shoplineapp.com/media/image_clips/6a742e87221273325fe03d6b/original.png?1785998983=&owner_id=58c5132a59d524173800069b" alt="COZU" style="width:65px;height:16px;object-fit:contain;" />
-        <span class="brand-sub" style="font-size:12px;color:var(--color-text-primary);letter-spacing:.01em;font-weight:600;">禮贈品查詢系統</span>
+        <div class="brand-text">
+          <span class="brand-sub" style="font-size:12px;color:var(--color-text-primary);font-weight:400;letter-spacing:.03em;">禮贈品查詢系統</span>
+          <span class="brand-sub-en">CORPORATE GIFT PROPOSAL SYSTEM</span>
+        </div>
       </div>
       <div class="topbar-links">
         <a class="topbar-link-btn" href="https://cozutw.github.io/internal-proposal-system/cozu-sop.html" target="_blank" rel="noopener noreferrer">
