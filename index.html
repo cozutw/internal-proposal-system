@@ -290,31 +290,40 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
   font-weight: 700;
   color: #232A31;
+  cursor: pointer;
+  user-select: none;
 }
 .budget-banner-title svg { width: 15px; height: 15px; color: inherit; }
-/* 基準說明（2026-07-20：原 res-remark 併入，常駐顯示目前價格基準）*/
+/* 基準說明（2026-07-20：原 res-remark 併入，常駐顯示目前價格基準）；
+   2026-08-19：加 opacity transition，MOQ 切換文字內容時用 fade 取代原本的整塊背景閃動 */
 .budget-basis-sep { color: var(--ink-2); font-weight: 400; }
-.budget-basis { font-size: 12px; font-weight: 400; color: var(--ink-2); }
+.budget-basis { font-size: 12px; font-weight: 400; color: var(--ink-2); transition: opacity .15s ease; }
+.budget-basis.fading { opacity: 0; }
+/* 展開/收合箭頭（2026-08-19：使用者可隨時手動展開，不再只綁 MOQ）：
+   預設（展開狀態）朝上，collapsed 時朝下，跟 fgroup-arrow 的方向語意一致（下＝可點開） */
+.budget-banner-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-2);
+  transition: transform .2s;
+  flex-shrink: 0;
+  transform: rotate(180deg);
+  margin-left: 2px;
+}
+.budget-banner.collapsed .budget-banner-arrow { transform: rotate(0deg); }
 .budget-banner-chips { justify-content: center; }
 .budget-banner .chip { background: #fff; padding: 5px 14px; font-size: 12px; }
 .budget-banner .chip.on { background: var(--ink); border-color: var(--ink); }
 /* 吸頂時縮薄：隱藏名稱與圖示、保留基準小字（2026-07-20 修訂：原版整行標題藏掉，
    捲動深處反而失去「眼前價格是什麼基準」的脈絡，故改為只藏名稱）*/
-.budget-banner.stuck { padding: 8px 20px 16px 20px; border-radius: 0; box-shadow: 0 4px 12px rgba(0,0,0,.03); }
+.budget-banner.stuck { background: #fff; padding: 12px 20px; border-radius: 0; box-shadow: 0 4px 12px rgba(0,0,0,.03); }
 .budget-banner.stuck .budget-basis-sep,
 .budget-banner.stuck .budget-basis { display: none; }
-/* 收合狀態（2026-08-19：MOQ 選「不限」時收合，只留標題名稱，基準文字與 chips 都藏起來，
-   因為沒選 MOQ 時這行字只是「若選了會用什麼基準」的預告，收合精神是沒在用就不佔視覺重量）*/
+/* 收合狀態（2026-08-19：預設收合，由 budgetBannerOpen 這個變數手動控制，見 JS；
+   選具體 MOQ 時會連動自動展開、切回不限自動收合，但箭頭可隨時覆寫，兩者脫鉤）*/
 .budget-banner.collapsed .budget-banner-chips,
 .budget-banner.collapsed .budget-basis-sep,
 .budget-banner.collapsed .budget-basis { display: none; }
-/* 切換 MOQ 時的一次性提示：背景短暫加深，讓「剛剛的動作影響了這裡」被看見；
-   2026-08-19：底色拿掉後改回 transparent，不再閃回灰底 */
-@keyframes budgetFlash {
-  0%   { background: #E4E0D8; }
-  100% { background: transparent; }
-}
-.budget-banner.flash { animation: budgetFlash .6s ease-out; }
 
 /* 選定 MOQ 但商品無對應級距報價的標註（視覺樣式第一版，待 Can 調整）*/
 .card-price-noquote { font-size: 12px; font-weight: 600; color: #b08d57; }
@@ -992,11 +1001,12 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     <!-- 客戶單品預算（2026-07-20 改版：第二層篩選，比對基準依 MOQ 動態切換；
          基準說明常駐於橫幅標題，原 res-remark 灰字已併入此處）-->
     <div class="budget-banner" id="budgetBanner">
-      <div class="budget-banner-title">
+      <div class="budget-banner-title" onclick="toggleBudgetBanner()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 13C13.2386 13 11 11.8807 11 10.5C11 9.11929 13.2386 8 16 8C18.7614 8 21 9.11929 21 10.5C21 11.8807 18.7614 13 16 13Z"/><path d="M11 14.5C11 15.8807 13.2386 17 16 17C18.7614 17 21 15.8807 21 14.5"/><path d="M3 9.5C3 10.8807 5.23858 12 8 12C9.12583 12 10.1647 11.814 11.0005 11.5"/><path d="M3 13C3 14.3807 5.23858 15.5 8 15.5C9.12561 15.5 10.1643 15.314 11 15.0002"/><path d="M3 5.5V16.5C3 17.8807 5.23858 19 8 19C9.12563 19 10.1643 18.8139 11 18.5"/><path d="M13 8.5V5.5"/><path d="M11 10.5V18.5C11 19.8807 13.2386 21 16 21C18.7614 21 21 19.8807 21 18.5V10.5"/><path d="M8 8C5.23858 8 3 6.88071 3 5.5C3 4.11929 5.23858 3 8 3C10.7614 3 13 4.11929 13 5.5C13 6.88071 10.7614 8 8 8Z"/></svg>
         <span class="budget-banner-name">客戶單品預算</span>
         <span class="budget-basis-sep">·</span>
         <span class="budget-basis" id="budgetBasis">以 500 件報價為基準</span>
+        <svg class="budget-banner-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
       </div>
       <div class="chips budget-banner-chips" id="budgetChips">
         <button class="chip" data-budget="u100"     onclick="toggleBudget('u100')">NT$100 以下</button>
@@ -1109,6 +1119,9 @@ let selStocks  = new Set(); // 庫存狀態（多選）
 let selMoq     = 'all';
 let selectedIds = new Set(); // 已勾選商品的 _id
 let customerName = ''; // 提案客戶名稱
+// 2026-08-19：預算橫幅展開狀態，跟 selMoq 脫鉤——預設收合，選具體 MOQ 時 pickMoq() 會
+// 連動設為展開、切回不限連動設為收合，但使用者可隨時用標題列箭頭手動覆寫
+let budgetBannerOpen = false;
 
 // ════════════════════════════════════
 // 載入資料（2026-07-15 起改讀 GAS 中介層，gviz 與 parseGviz/parseGvizDate 退役）
@@ -1385,17 +1398,33 @@ function pickMoq(id) {
     selBudgets.clear();
     updateBudgetChips();
   }
+  // 2026-08-19：選具體訂購數量時連動自動展開預算橫幅、切回不限連動自動收合；
+  // 使用者仍可用標題列箭頭（toggleBudgetBanner）隨時手動覆寫，兩者是疊加關係
+  budgetBannerOpen = (id !== 'all');
   document.querySelectorAll('#moqChips .chip').forEach(b => {
     b.classList.toggle('on', b.dataset.moq === id);
   });
   render();
-  // 一次性提示：切換 MOQ 時預算橫幅短暫閃動，標示兩者聯動（MOQ 多為開場設定一次，故僅輕量提示）
-  const banner = document.getElementById('budgetBanner');
-  if (banner) {
-    banner.classList.remove('flash');
-    void banner.offsetWidth; // 強制 reflow，讓連續切換也能重播動畫
-    banner.classList.add('flash');
-  }
+}
+// 2026-08-19：預算橫幅標題列的手動展開/收合（拿掉原本切換 MOQ 時的整塊背景閃動，
+// 改用箭頭 + 內容淡入淡出，比較不突兀）
+function toggleBudgetBanner() {
+  budgetBannerOpen = !budgetBannerOpen;
+  document.getElementById('budgetBanner').classList.toggle('collapsed', !budgetBannerOpen);
+}
+// 基準說明文字的 fade 切換：先比對內容是否真的變了，沒變就不觸發，
+// 變了才淡出→換字→淡入，時間要對應 CSS 的 .budget-basis transition（150ms）
+function updateBudgetBasisText() {
+  const el = document.getElementById('budgetBasis');
+  const next = selMoq !== 'all'
+    ? `以 ${MOQ_OPTS.find(m => m.id === selMoq).qty} 件報價為基準`
+    : '以 500 件報價為基準（無 500 件資料時取最小 MOQ 報價）';
+  if (el.textContent === next) return;
+  el.classList.add('fading');
+  setTimeout(() => {
+    el.textContent = next;
+    el.classList.remove('fading');
+  }, 150);
 }
 
 // ════════════════════════════════════
@@ -1409,16 +1438,16 @@ function render() {
   document.getElementById('clearBtn').disabled = !hasFilter;
   document.getElementById('resCount').innerHTML = `找到 <b>${filtered.length}</b> 項商品`;
 
-  // 收合狀態（2026-08-19）：MOQ「不限」時收合橫幅，只留標題名稱；放在 render() 是唯一
-  // 判斷點，因為 selMoq 除了 pickMoq() 會改，clearAll() 也會把它設回 'all'，兩個入口
-  // 都會呼叫 render()，寫在這裡不用兩處各判斷一次
-  document.getElementById('budgetBanner').classList.toggle('collapsed', selMoq === 'all');
+  // 收合狀態（2026-08-19）：改由 budgetBannerOpen 控制，不再直接綁 selMoq === 'all'。
+  // pickMoq() 會連動設定 budgetBannerOpen（見上方），這裡只負責把狀態同步到 DOM，
+  // 跟 toggleBudgetBanner() 共用同一份「唯一畫面來源」，clearAll() 也會經過這裡
+  document.getElementById('budgetBanner').classList.toggle('collapsed', !budgetBannerOpen);
 
   // 基準說明（2026-07-20 修訂）：常駐於預算橫幅標題，隨 MOQ 動態切換；
-  // 未選 MOQ 時附註 500 份缺資料的遞補規則（原 res-remark 內容併入此處）
-  document.getElementById('budgetBasis').textContent = selMoq !== 'all'
-    ? `以 ${MOQ_OPTS.find(m => m.id === selMoq).qty} 件報價為基準`
-    : '以 500 件報價為基準（無 500 件資料時取最小 MOQ 報價）';
+  // 未選 MOQ 時附註 500 份缺資料的遞補規則（原 res-remark 內容併入此處）；
+  // 2026-08-19：文字改用 fade 切換取代原本切 MOQ 時的整塊背景閃動，只有內容真的變了才
+  // 觸發淡入淡出，避免其他篩選互動（跟 budgetBasis 無關）也跟著閃一下
+  updateBudgetBasisText();
 
   // active chips
   const achip = document.getElementById('activeChips');
@@ -1958,6 +1987,7 @@ function toggleFgroup(titleEl) {
 function clearAll() {
   selMats.clear(); selThemes.clear(); selInds.clear(); selTags.clear();
   selBudgets.clear(); selLeads.clear(); selStocks.clear(); selMoq = 'all';
+  budgetBannerOpen = false; // 2026-08-19：全部清除時預算橫幅一併收合回預設狀態
   updateBudgetChips();
   document.querySelectorAll('#moqChips .chip').forEach(b => b.classList.toggle('on', b.dataset.moq === 'all'));
   render();
