@@ -1095,7 +1095,7 @@ const DATA_API_URL = EXPORT_WEBAPP_URL + '?data=products';
 // 「此訂購量無對應報價」共用文案與圖示（2026-08-19）：卡片與 panel 各自的 CTA 不同，
 // 但事實敘述前半段一致，圖示也共用同一顆，兩處只改這裡，不用分別維護
 const NO_QUOTE_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11H11M14 11H11M11 11V8M11 11V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M17 17L21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 11C3 15.4183 6.58172 19 11 19C13.213 19 15.2161 18.1015 16.6644 16.6493C18.1077 15.2022 19 13.2053 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-const NO_QUOTE_TEXT_CARD  = `${NO_QUOTE_ICON}此訂購量無對應報價，點開看完整報價表`;
+const NO_QUOTE_TEXT_CARD  = `${NO_QUOTE_ICON}請點選卡片查詢區間價格`;
 const NO_QUOTE_TEXT_PANEL = `${NO_QUOTE_ICON}此訂購量無對應報價，請自行查詢下列報價表`;
 
 // 預算篩選（2026-07-20 改版）：七區間，比對基準依 MOQ 動態切換（見 budgetBasis）
@@ -1508,7 +1508,7 @@ function render() {
 
     const imgHtml = p.image_url
       ? `<img src="${p.image_url}" alt="${p.name}" />`
-      : `<img src="https://img.shoplineapp.com/media/image_clips/6a7ec98936cd200ed1ed3601/original.png?1786694024=&owner_id=58c5132a59d524173800069b" alt="尚未上傳圖片" />`;
+      : `<img src="https://img.shoplineapp.com/media/image_clips/6a85211ab42441111e52f307/original.png?1787109658=&owner_id=58c5132a59d524173800069b" alt="尚未上傳圖片" />`;
 
 
     card.innerHTML = `
@@ -2016,7 +2016,7 @@ function openPeek(p) {
 
   const imgHtml = p.image_url
     ? `<img src="${p.image_url}" alt="${p.name}" />`
-    : `<img src="https://img.shoplineapp.com/media/image_clips/6a7ec98936cd200ed1ed3601/original.png?1786694024=&owner_id=58c5132a59d524173800069b" alt="尚未上傳圖片" />`;
+    : `<img src="https://img.shoplineapp.com/media/image_clips/6a85211ab42441111e52f307/original.png?1787109658=&owner_id=58c5132a59d524173800069b" alt="尚未上傳圖片" />`;
 
   document.getElementById('peekBody').innerHTML = `
     <div class="peek-img">${imgHtml}</div>
