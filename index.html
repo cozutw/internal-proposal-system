@@ -1231,18 +1231,21 @@ function lowestPrice(priceStr) {
 // ════════════════════════════════════
 // 篩選邏輯（2026-07-20 改版：雙層價格篩選）
 // ════════════════════════════════════
-// 取商品在目前選定 MOQ 級距的報價字串（精確比對 priceNote 的 qty）；
-// 未選 MOQ 或無對應級距 → 回傳 null
+// 取商品在目前選定 MOQ 級距的報價字串（2026-08-19 改為累進階梯：
+// 抓「小於等於選定數量」的最大階，例如選 200 件、商品只填 100/500/1000 三階 →
+// 抓 100 那階；tiers 已依 qty 由小到大排序，過濾後取最後一筆即為最大符合階）
+// 未選 MOQ，或所有已知階都比選定數量高（沒有更低階可用）→ 回傳 null
 function getTierPrice(p) {
   if (selMoq === 'all') return null;
   const qty = MOQ_OPTS.find(m => m.id === selMoq).qty;
-  const tier = parsePriceNote(p.priceNote).find(t => t.qty === qty);
+  const tiers = parsePriceNote(p.priceNote).filter(t => t.qty <= qty);
+  const tier = tiers.length ? tiers[tiers.length - 1] : null;
   return tier ? tier.price : null;
 }
 
 // 預算比對基準（雙基準規則，2026-07-20 定案）：
 // 未選 MOQ → 用 price 欄（500 份基準；spec 規定無 500 份資料時該欄為最小 MOQ 報價）
-// 已選 MOQ → 用該級距報價；無對應級距 → 回傳 null
+// 已選 MOQ → 用累進階梯抓到的級距報價；沒有更低階可用 → 回傳 null
 // 範圍值（如 65-75）取最低值比對，與排序基準一致
 function budgetBasis(p) {
   if (selMoq === 'all') {
@@ -1253,14 +1256,34 @@ function budgetBasis(p) {
   return tp ? lowestPrice(tp) : null;
 }
 
+// 檢查商品所有已知報價階（不限選定的 MOQ），是否有任一階的價格真的落在使用者選的
+// 預算區間內。2026-08-19 新增：專門處理「已選 MOQ，但商品所有已知階都比選定數量高，
+// 沒有更低階可用」這種情況——這種商品訂購量拉高後可能真的會到那個價位，值得讓業務
+// 自己判斷、去跟客戶推「訂多一點就到你要的價格」，但要有真實報價數字撐著才放行，
+// 不是無條件放行（無條件放行會重蹈今天稍早才修掉的「無差別塞進不合理區間」問題）
+function hasAnyTierInBudget(p) {
+  const tiers = parsePriceNote(p.priceNote);
+  return tiers.some(t => {
+    const v = lowestPrice(t.price);
+    if (v == null) return false;
+    return [...selBudgets].some(id => {
+      const opt = BUDGET_OPTS.find(b => b.id === id);
+      if (!opt) return false;
+      return v >= opt.min && v <= opt.max;
+    });
+  });
+}
+
 function matchBudget(p) {
   if (selBudgets.size === 0) return true;
   const basis = budgetBasis(p);
-  // 2026-08-19 修正：沒有實際報價證據支持商品落在該預算區間，就一律排除（false），
-  // 不再對「已選 MOQ 但無對應級距」的商品放行——舊規則會讓這類商品無差別出現在任一
-  // 預算格（含明顯不合理的高價格區間），寧可少顯示、不誤導業務。
+  // 2026-08-19 修正（第二版）：basis 為 null 現在只會在「已選 MOQ，但商品所有已知階都
+  // 比選定數量高」時出現（getTierPrice 已改累進階梯，抓不到代表真的沒有更低階）。
+  // 不再一律排除，改成檢查該商品其他已知階有沒有落在選定預算區間的（hasAnyTierInBudget）；
+  // 完全沒有任何一階對得上，才真的排除——維持「要有報價證據才放行」的原則，
+  // 只是把證據範圍從「只看選定的那個 MOQ 階」放寬成「看這商品所有已知階」。
   // 卡片上「此訂購量無對應報價」是獨立的顯示規則，給業務瀏覽用，不受此排除影響。
-  if (basis == null) return false;
+  if (basis == null) return hasAnyTierInBudget(p);
   return [...selBudgets].some(id => {
     const opt = BUDGET_OPTS.find(b => b.id === id);
     if (!opt) return false;
@@ -1275,8 +1298,8 @@ function matchMoq(moq) {
   return moq <= opt.qty;
 }
 
-// 排序基準：未選 MOQ → price（500 份基準）最低值；已選 MOQ → 該級距報價最低值
-// 無對應級距或無價格 → Infinity 沉底（僅適用現行「低到高」排序；
+// 排序基準：未選 MOQ → price（500 份基準）最低值；已選 MOQ → 累進階梯抓到的級距報價最低值
+// 沒有更低階可用或無價格 → Infinity 沉底（僅適用現行「低到高」排序；
 // 未來若加「高到低」排序，無報價商品須改為恆沉底，不能沿用 Infinity）
 function priceSortKey(p) {
   if (selMoq !== 'all') {
