@@ -13,7 +13,7 @@
   /* ── Color: Text ── */
   --color-text-primary:   #232A31;
   --color-text-secondary: #4a4e5b;
-  --color-text-tertiary:  #888888;
+  --color-text-tertiary:  #848B91;
 
   /* ── Color: Background ── */
   --color-bg:             #ffffff;
@@ -67,7 +67,7 @@ a { color: inherit; text-decoration: none; }
 .topbar-row1 {
   display: flex;
   align-items: center;
-  height: 52px;
+  height: 48px;
   gap: 12px;
 }
 .brand { display: flex; align-items: center; gap: 8px; }
@@ -106,30 +106,28 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   justify-content: space-between;
 }
-.tabs { display: flex; gap: 2px; }
+.tabs { display: flex; gap: 20px; }
 .topbar-meta { font-size: 11px; color: var(--ink-2); padding-bottom: 10px; }
 .tab {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 16px;
+  padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-2);
   background: none;
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: var(--radius) var(--radius) 0 0;
-  position: relative;
-  top: 1px;
+  border: none;
+  border-bottom: 2px solid transparent;
   white-space: nowrap;
+  transition: color .1s, border-color .1s;
 }
 .tab svg { width: 14px; height: 14px; }
-.tab.active { color: var(--ink); background: var(--color-bg-page); border-color: var(--line); }
+.tab.active { color: #345D73; font-weight: 700; border-bottom-color: #345D73; }
 .tab.disabled { color: #ccc; cursor: default; }
 /* 2026-07-20：禮盒／獎座 tab 暫時隱藏（程式碼保留，要恢復顯示只需刪除下面這一行） */
 .tab.disabled { display: none; }
-.tab:not(.active):not(.disabled):hover { background: var(--hover); }
+.tab:not(.active):not(.disabled):hover { color: var(--ink); }
 .soon {
   font-size: 9px;
   color: #bbb;
@@ -275,7 +273,7 @@ a { color: inherit; text-decoration: none; }
   top: 106px;              /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
   z-index: 5;              /* 低於 topbar(10) */
   border-radius: 8px;
-  padding: 4px 20px;
+  padding: 8px 20px;
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
@@ -383,8 +381,9 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
 }
-.card:hover { background: var(--bg-soft); }
+.card:hover { background: var(--bg-soft); box-shadow: 2px 4px 20px #00000010; }
 .card.selected { box-shadow: 0 0 0 1px var(--ink), 2px 4px 12px #00000005; }
+.card.selected:hover { box-shadow: 0 0 0 1px var(--ink), 2px 4px 20px #00000010; }
 
 /* card checkbox */
 .card-checkbox {
@@ -454,12 +453,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 .card-body { padding: 12px 12px 8px 12px; flex: 1; display: flex; flex-direction: column; }
-.card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
-.card-name { font-size: 14px; font-weight: 600; line-height: 1.35; }
+.card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.card-name { font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--color-text-primary); }
 .card-name-mats { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
-.card-price { margin-bottom: 9px; }
+.card-price { margin-bottom: 12px; }
 .card-price-row { display: flex; align-items: baseline; gap: 8px; }
-.card-price-main { font-size: 13px; font-weight: 700; }
+.card-price-main { font-size: 13px; font-weight: 700; color: var(--color-text-primary); }
 .card-price-min { font-size: 10px; font-weight: 700; color: var(--ink-2); }
 .card-price-note { font-size: 10px; font-weight: 400; color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
