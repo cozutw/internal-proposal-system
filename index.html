@@ -275,7 +275,7 @@ a { color: inherit; text-decoration: none; }
   top: 106px;              /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
   z-index: 5;              /* 低於 topbar(10) */
   border-radius: 8px;
-  padding: 16px 20px;
+  padding: 4px 20px;
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
@@ -326,7 +326,16 @@ a { color: inherit; text-decoration: none; }
 .budget-banner.collapsed .budget-basis { display: none; }
 
 /* 選定 MOQ 但商品無對應級距報價的標註（視覺樣式第一版，待 Can 調整）*/
-.card-price-noquote { font-size: 12px; font-weight: 600; color: #b08d57; }
+.card-price-noquote {
+  font-size: 12px;
+  font-weight: 400;
+  color: #345D73;
+  letter-spacing: .02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-price-noquote svg { width: 14px; height: 14px; flex-shrink: 0; color: inherit; }
 .active-chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .achip {
   display: inline-flex;
@@ -444,7 +453,7 @@ a { color: inherit; text-decoration: none; }
   object-fit: cover;
 }
 
-.card-body { padding: 12px 13px 13px; flex: 1; display: flex; flex-direction: column; }
+.card-body { padding: 12px 12px 8px 12px; flex: 1; display: flex; flex-direction: column; }
 .card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
 .card-name { font-size: 14px; font-weight: 600; line-height: 1.35; }
 .card-name-mats { display: flex; gap: 3px; flex-wrap: wrap; align-items: center; }
@@ -572,7 +581,7 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
-.peek-label { font-size: 11px; color: var(--ink-2); letter-spacing: .04em; }
+.peek-label { font-size: 12px; color: var(--color-text-secondary); font-weight: 600; letter-spacing: .04em; }
 .peek-close {
   margin-left: auto;
   width: 28px; height: 28px;
@@ -1041,7 +1050,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 <div class="scrim" id="scrim" style="display:none" onclick="closePeek()"></div>
 <aside class="peek" id="peek" style="display:none">
   <div class="peek-head">
-    <span class="peek-label">商品明細</span>
+    <span class="peek-label">詳細資訊</span>
     <button class="peek-close" onclick="closePeek()">✕</button>
   </div>
   <div class="peek-body" id="peekBody"></div>
@@ -1082,6 +1091,12 @@ const COZU_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/17_vnO7KUM
 // 商品資料讀取網址（與匯出接收器同一個 GAS 部署，帶 ?data=products 參數）
 // 快取 10 分鐘；業助改完資料想立即確認，可在瀏覽器開此網址並加上 &fresh=1
 const DATA_API_URL = EXPORT_WEBAPP_URL + '?data=products';
+
+// 「此訂購量無對應報價」共用文案與圖示（2026-08-19）：卡片與 panel 各自的 CTA 不同，
+// 但事實敘述前半段一致，圖示也共用同一顆，兩處只改這裡，不用分別維護
+const NO_QUOTE_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11H11M14 11H11M11 11V8M11 11V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M17 17L21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 11C3 15.4183 6.58172 19 11 19C13.213 19 15.2161 18.1015 16.6644 16.6493C18.1077 15.2022 19 13.2053 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+const NO_QUOTE_TEXT_CARD  = `${NO_QUOTE_ICON}此訂購量無對應報價，點開看完整報價表`;
+const NO_QUOTE_TEXT_PANEL = `${NO_QUOTE_ICON}此訂購量無對應報價，請自行查詢下列報價表`;
 
 // 預算篩選（2026-07-20 改版）：七區間，比對基準依 MOQ 動態切換（見 budgetBasis）
 const BUDGET_OPTS = [
@@ -1244,7 +1259,7 @@ function matchBudget(p) {
   // 2026-08-19 修正：沒有實際報價證據支持商品落在該預算區間，就一律排除（false），
   // 不再對「已選 MOQ 但無對應級距」的商品放行——舊規則會讓這類商品無差別出現在任一
   // 預算格（含明顯不合理的高價格區間），寧可少顯示、不誤導業務。
-  // 卡片上「請點開卡片查詢該區間報價」是獨立的顯示規則，給業務瀏覽用，不受此排除影響。
+  // 卡片上「此訂購量無對應報價」是獨立的顯示規則，給業務瀏覽用，不受此排除影響。
   if (basis == null) return false;
   return [...selBudgets].some(id => {
     const opt = BUDGET_OPTS.find(b => b.id === id);
@@ -1515,7 +1530,7 @@ function render() {
                 const tp = getTierPrice(p);
                 return tp
                   ? `<span class="card-price-main">NT$${formatPrice(tp)}</span>`
-                  : `<span class="card-price-noquote">請點開卡片查詢該區間報價</span>`;
+                  : `<span class="card-price-noquote">${NO_QUOTE_TEXT_CARD}</span>`;
               }
               return `<span class="card-price-main">NT$${formatPrice(p.price) || p.price_max}</span>
             ${p.price_min && p.price_min < p.price_max ? `<span class="card-price-min">NT$${p.price_min}起</span>` : ''}`;
@@ -2014,7 +2029,7 @@ function openPeek(p) {
             const tp = getTierPrice(p);
             return tp
               ? `<span class="peek-price-main">NT$${formatPrice(tp)}</span>`
-              : `<span class="card-price-noquote">此 MOQ 無對應報價</span>`;
+              : `<span class="card-price-noquote">${NO_QUOTE_TEXT_PANEL}</span>`;
           }
           return `<span class="peek-price-main">NT$${formatPrice(p.price) || p.price_max}</span>
           ${p.price_min && p.price_min < p.price_max ? `<span class="peek-price-min">NT$${p.price_min}起</span>` : ''}`;
