@@ -488,6 +488,17 @@ a { color: inherit; text-decoration: none; }
   flex-wrap: wrap;
 }
 .meta-sep { color: var(--line); }
+/* 2026-08-20 新增：卡片「大量訂購」標記，用跟 price-tier-row-active 一致的金色系，
+   跟中性灰的 .mtag 區隔開，提示這是需要特別注意的狀態 */
+.moq-bulk-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #b08d57;
+  border: 1px solid #b08d57;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
 .card-tag-row {
   margin-top: 8px;
   display: flex;
@@ -1120,6 +1131,11 @@ const MOQ_OPTS = [
   { id: '500',  label: '500',  qty: 500 },
   { id: '1000', label: '1000', qty: 1000 },
 ];
+// 2026-08-20 新增：MOQ chips 能篩到的最大訂購量。商品自己的 moq 若超過這個值，
+// 代表選任何一個具體訂購量都會被 matchMoq() 排除、只有「不限」看得到，容易讓業務誤以為
+// 篩選壞了；卡片加「大量訂購」標記提示原因。用相對值（取 MOQ_OPTS 最大者）而非寫死數字，
+// 以後 MOQ_OPTS 增減選項時這裡自動跟著調整，不用兩邊維護
+const MAX_MOQ_FILTER_QTY = Math.max(...MOQ_OPTS.filter(m => m.qty != null).map(m => m.qty));
 
 // ════════════════════════════════════
 // 狀態
@@ -1564,6 +1580,7 @@ function render() {
         </div>
         <div class="card-meta">
           <span>MOQ ${p.moq.toLocaleString()}</span>
+          ${p.moq > MAX_MOQ_FILTER_QTY ? `<span class="meta-sep">·</span><span class="moq-bulk-badge">大量訂購</span>` : ''}
         </div>
         <div class="card-tag-row">
           ${p.themes.slice(0,2).map(t => `<span class="mtag">${t}</span>`).join('')}
@@ -2063,9 +2080,14 @@ function openPeek(p) {
 
       ${(() => {
         const tiers = parsePriceNote(p.priceNote);
-        // 2026-08-20 新增：moq ≥ 1000 的商品，priceNote 依規格必然空白（規則只填到1000份為止），
-        // 但仍要秀出「1000份以上量大另議」連結，讓業務知道去哪裡查完整報價，不能什麼都不顯示
-        if (!tiers.length && p.moq < 1000) {
+        const QUOTATION_URL = 'https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=1570790762#gid=1570790762';
+        // 2026-08-20 修正：moq ≥ 1000 時 priceNote 依規格必然空白（規則只填到1000份為止）。
+        // 原本寫死「1000份以上量大另議」不夠準確——實際門檻可能是1500/2000/5000等，
+        // 改用商品自己的 moq 動態組字，避免業務誤以為訂 1001 份就能接單
+        if (!tiers.length && p.moq >= MAX_MOQ_FILTER_QTY) {
+          return `<div class="price-tier-table"><a class="price-tier-more" href="${QUOTATION_URL}" target="_blank" rel="noopener noreferrer"><div class="price-tier-more-inner"><span>此商品僅接受 ${p.moq.toLocaleString()} 份以上訂單，請前往報價大表查詢</span><span>→</span></div></a></div>`;
+        }
+        if (!tiers.length) {
           return p.priceNote ? `<div class="peek-price-note" style="margin-top:4px">${p.priceNote}</div>` : '';
         }
         // 已選 MOQ 時，高亮對應級距那一列，方便跟上方主要價格對照
@@ -2073,7 +2095,6 @@ function openPeek(p) {
         const rows = tiers.map(t =>
           `<div class="price-tier-row${t.qty === selQty ? ' price-tier-row-active' : ''}"><span class="price-tier-qty">${t.qty.toLocaleString()}份</span><span class="price-tier-price">NT$${t.price}</span></div>`
         ).join('');
-        const QUOTATION_URL = 'https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=1570790762#gid=1570790762';
         return `<div class="price-tier-table">${rows}<a class="price-tier-more" href="${QUOTATION_URL}" target="_blank" rel="noopener noreferrer"><div class="price-tier-more-inner"><span>1000份以上量大另議</span><span>→</span></div></a></div>`;
       })()}
       ${(() => {
