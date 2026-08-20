@@ -1180,6 +1180,7 @@ function parseProducts(items) {
       slide_id          : get('slide_id'),
       lead_time         : get('lead_time'),
       in_stock          : get('in_stock'),
+      sample_location   : get('sample_location'),
       last_updated_time : get('last_updated_time'), // 中介層已輸出 YYYY-MM-DD
     };
   }).filter(p => p.name);
@@ -2085,6 +2086,7 @@ function openPeek(p) {
       <div class="dl-row"><span class="dl-key">最低訂購量</span><span class="dl-val">${p.moq.toLocaleString()} 件</span></div>
       <div class="dl-row"><span class="dl-key">交期</span><span class="dl-val">${p.lead_time || '—'}</span></div>
       <div class="dl-row"><span class="dl-key">庫存狀態</span><span class="dl-val">${p.in_stock || '—'}</span></div>
+      <div class="dl-row"><span class="dl-key">樣品位置</span><span class="dl-val">${p.sample_location || '—'}</span></div>
       <div class="dl-row"><span class="dl-key">自訂標籤</span><span class="dl-val">${p.tag}</span></div>
       ${p.last_updated_time ? `<div class="dl-row"><span class="dl-key">最後更新時間</span><span class="dl-val">${p.last_updated_time}</span></div>` : ''}
     </div>
