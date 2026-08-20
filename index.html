@@ -2063,13 +2063,17 @@ function openPeek(p) {
 
       ${(() => {
         const tiers = parsePriceNote(p.priceNote);
-        if (!tiers.length) return p.priceNote ? `<div class="peek-price-note" style="margin-top:4px">${p.priceNote}</div>` : '';
+        // 2026-08-20 新增：moq ≥ 1000 的商品，priceNote 依規格必然空白（規則只填到1000份為止），
+        // 但仍要秀出「1000份以上量大另議」連結，讓業務知道去哪裡查完整報價，不能什麼都不顯示
+        if (!tiers.length && p.moq < 1000) {
+          return p.priceNote ? `<div class="peek-price-note" style="margin-top:4px">${p.priceNote}</div>` : '';
+        }
         // 已選 MOQ 時，高亮對應級距那一列，方便跟上方主要價格對照
         const selQty = selMoq !== 'all' ? MOQ_OPTS.find(m => m.id === selMoq).qty : null;
         const rows = tiers.map(t =>
           `<div class="price-tier-row${t.qty === selQty ? ' price-tier-row-active' : ''}"><span class="price-tier-qty">${t.qty.toLocaleString()}份</span><span class="price-tier-price">NT$${t.price}</span></div>`
         ).join('');
-        const QUOTATION_URL = 'https://docs.google.com/spreadsheets/d/1Ng0iHDlKDWyTRi8FJVd1kJDroKCu28700F1RXP3eMZE/edit?gid=1377754576#gid=1377754576';
+        const QUOTATION_URL = 'https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=1570790762#gid=1570790762';
         return `<div class="price-tier-table">${rows}<a class="price-tier-more" href="${QUOTATION_URL}" target="_blank" rel="noopener noreferrer"><div class="price-tier-more-inner"><span>1000份以上量大另議</span><span>→</span></div></a></div>`;
       })()}
       ${(() => {
