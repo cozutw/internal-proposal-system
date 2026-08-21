@@ -494,9 +494,6 @@ a { color: inherit; text-decoration: none; }
   font-size: 10px;
   font-weight: 400;
   color: #b08d57;
-  border: 1px solid #b08d5799;
-  border-radius: 2px;
-  padding: 0px 4px 2px;
   white-space: nowrap;
 }
 .card-tag-row {
@@ -585,10 +582,10 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   text-align: center;
 }
-.gate-logo { width: 81px; height: 20px; object-fit: contain; margin-bottom: 20px; }
+.gate-logo { width: 81px; height: 20px; object-fit: contain; margin-bottom: 12px; }
 .gate-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 400;
   color: var(--color-text-primary);
   margin-bottom: 24px;
 }
@@ -602,14 +599,17 @@ a { color: inherit; text-decoration: none; }
   font-size: 12px;
 }
 .gate-form { width: 100%; }
+/* 2026-08-21：對應的說明文字（.gate-sub）已從 HTML 移除，此規則暫時保留未使用，
+   若確定不會恢復可直接刪除 */
 .gate-sub {
   font-size: 12px;
   color: var(--color-text-tertiary);
   margin-bottom: 16px;
 }
+.gate-input-wrap { position: relative; width: 100%; }
 .gate-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 8px 36px 8px 12px;
   font-size: 13px;
   font-family: var(--font);
   color: var(--color-text-primary);
@@ -620,11 +620,28 @@ a { color: inherit; text-decoration: none; }
   -moz-osx-font-smoothing: grayscale;
 }
 .gate-input:focus { border-color: #345D73; }
+.gate-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+}
+.gate-toggle:hover { color: var(--color-text-primary); }
+.gate-toggle svg { width: 16px; height: 16px; display: block; }
 .gate-error {
-  font-size: 11px;
+  font-size: 12px;
   color: #c0392b;
   text-align: left;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .gate-submit {
   width: 100%;
@@ -994,10 +1011,14 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     </div>
 
     <div class="gate-form" id="gateForm" style="display:none">
-      <div class="gate-sub">請輸入通行密語以繼續</div>
-      <input type="password" id="gateInput" class="gate-input" placeholder="通行密語" autocomplete="off" />
+      <div class="gate-input-wrap">
+        <input type="password" id="gateInput" class="gate-input" placeholder="密碼" autocomplete="off" />
+        <button type="button" class="gate-toggle" id="gateToggle" onclick="toggleGatePassword()" aria-label="顯示密碼" tabindex="-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 16L17.0248 12.6038" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 17.5V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M4.5 16L6.96895 12.6124" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 8C6.6 16 17.4 16 21 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+      </div>
       <div class="gate-error" id="gateError" style="display:none"></div>
-      <button class="gate-submit" id="gateSubmit" onclick="submitGateToken()">進入系統</button>
+      <button class="gate-submit" id="gateSubmit" onclick="submitGateToken()">登入</button>
     </div>
   </div>
 </div>
@@ -1708,7 +1729,7 @@ function render() {
         </div>
         <div class="card-meta">
           <span>MOQ ${p.moq.toLocaleString()}</span>
-          ${p.moq > MAX_MOQ_FILTER_QTY ? `<span class="meta-sep">·</span><span class="moq-bulk-badge">大量訂購</span>` : ''}
+          ${p.moq > MAX_MOQ_FILTER_QTY ? `<span class="meta-sep">·</span><span class="moq-bulk-badge">・大量訂購</span>` : ''}
         </div>
         <div class="card-tag-row">
           ${p.themes.slice(0,2).map(t => `<span class="mtag">${t}</span>`).join('')}
@@ -2344,14 +2365,31 @@ function showGateForm(errorText) {
   }
   const btn = document.getElementById('gateSubmit');
   btn.disabled = false;
-  btn.textContent = '進入系統';
+  btn.textContent = '登入';
   const input = document.getElementById('gateInput');
   input.value = '';
+  input.type = 'password';
+  document.getElementById('gateToggle').innerHTML = GATE_EYE_CLOSED_ICON;
+  document.getElementById('gateToggle').setAttribute('aria-label', '顯示密碼');
   input.focus();
 }
 
 function hideGate() {
   document.getElementById('gateOverlay').style.display = 'none';
+}
+
+// 密碼顯示／隱藏切換（眼睛 icon，2026-08-21 新增）
+const GATE_EYE_CLOSED_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5 16L17.0248 12.6038" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 17.5V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M4.5 16L6.96895 12.6124" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M3 8C6.6 16 17.4 16 21 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+const GATE_EYE_OPEN_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 13C6.6 5 17.4 5 21 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 17C10.3431 17 9 15.6569 9 14C9 12.3431 10.3431 11 12 11C13.6569 11 15 12.3431 15 14C15 15.6569 13.6569 17 12 17Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+
+function toggleGatePassword() {
+  const input = document.getElementById('gateInput');
+  const btn = document.getElementById('gateToggle');
+  const willShow = input.type === 'password';
+  input.type = willShow ? 'text' : 'password';
+  btn.innerHTML = willShow ? GATE_EYE_OPEN_ICON : GATE_EYE_CLOSED_ICON;
+  btn.setAttribute('aria-label', willShow ? '隱藏密碼' : '顯示密碼');
+  input.focus();
 }
 
 // 帶著目前存在 localStorage 的密語去讀一次商品資料；
@@ -2374,7 +2412,7 @@ async function tryLoadAndEnter() {
   }
 }
 
-// 使用者在輸入框按下「進入系統」
+// 使用者在輸入框按下「登入」
 async function submitGateToken() {
   const input = document.getElementById('gateInput');
   const token = input.value.trim();
