@@ -562,6 +562,104 @@ a { color: inherit; text-decoration: none; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Access Gate（密語輸入門檻，A 方案，2026-08-21 新增）── */
+.gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--color-bg-page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.gate-box {
+  width: 100%;
+  max-width: 320px;
+  padding: 32px 28px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.gate-logo { width: 81px; height: 20px; object-fit: contain; margin-bottom: 20px; }
+.gate-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 24px;
+}
+.gate-checking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+.gate-form { width: 100%; }
+.gate-sub {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 16px;
+}
+.gate-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  outline: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.gate-input:focus { border-color: #345D73; }
+.gate-error {
+  font-size: 11px;
+  color: #c0392b;
+  text-align: left;
+  margin-top: 8px;
+}
+.gate-submit {
+  width: 100%;
+  padding: 8px 0;
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: #345D73;
+  border: none;
+  border-radius: 4px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.gate-submit:hover:not(:disabled) { background: #2a4c5e; }
+.gate-submit:disabled { opacity: .6; cursor: default; }
+
+/* ⚠️ 測試用「清除密語」按鈕（上線前刪除）：連同下面 .dev-gate-reset 這個
+   CSS block，以及 HTML 裡 id="devGateReset" 的按鈕、JS 裡的 devClearGateToken()
+   函式，三處一起刪除即可完整移除，不影響正式邏輯 */
+.dev-gate-reset {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 210;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  opacity: .55;
+}
+.dev-gate-reset:hover { opacity: 1; color: var(--color-text-primary); }
+
 /* ── Slide-over ── */
 .scrim {
   position: fixed;
@@ -885,6 +983,28 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 </head>
 <body>
 
+<!-- ════════ ACCESS GATE（密語輸入門檻，A 方案，2026-08-21 新增）════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <img src="https://img.shoplineapp.com/media/image_clips/6a742e87221273325fe03d6b/original.png?1785998983=&owner_id=58c5132a59d524173800069b" alt="COZU" class="gate-logo" />
+    <div class="gate-title">禮贈品提案系統</div>
+
+    <div class="gate-checking" id="gateChecking">
+      <span class="spinner"></span>正在驗證身份…
+    </div>
+
+    <div class="gate-form" id="gateForm" style="display:none">
+      <div class="gate-sub">請輸入通行密語以繼續</div>
+      <input type="password" id="gateInput" class="gate-input" placeholder="通行密語" autocomplete="off" />
+      <div class="gate-error" id="gateError" style="display:none"></div>
+      <button class="gate-submit" id="gateSubmit" onclick="submitGateToken()">進入系統</button>
+    </div>
+  </div>
+</div>
+
+<!-- ⚠️ 測試用「清除密語」按鈕（上線前刪除，見上方 CSS 註解說明三處位置） -->
+<button class="dev-gate-reset" id="devGateReset" onclick="devClearGateToken()">清除密語（測試用）</button>
+
 <!-- ════════ TOPBAR ════════ -->
 <div class="topbar">
   <div class="topbar-inner">
@@ -1093,10 +1213,17 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
 // 匯出清單設定
 // 把下面這行引號裡的字串換成真網址
 const EXPORT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyIuMD3FcvCjySW8VaNGl6gK-mi-VhG4Myn-AdiMOImslaHp0aUEcOPJuJQ2i0_dyVB/exec';
-// 密語要跟待匯出 Sheet 的 Apps Script「Script Properties」裡 COZU_TOKEN 的值一致
-const EXPORT_TOKEN      = 'supercozu2026';
 // 待匯出 Sheet 網址，送出成功後會自動導向這裡
 const EXPORT_SHEET_URL  = 'https://docs.google.com/spreadsheets/d/1nzNcaul4ToETE4xADTDJB2TTi495Q3OROvI-Nhb8xUM/edit';
+
+// ════════════════════════════════════
+// 存取門檻（A 方案，2026-08-21 新增）
+// 密語不再寫死在原始碼裡，改由使用者於進站畫面輸入後存進 localStorage，
+// 之後每次呼叫 doGet／doPost 都從這裡讀取、一起帶過去。
+// 密語要跟 Apps Script「Script Properties」裡 COZU_TOKEN 的值一致（doGet／doPost 共用同一組）。
+// ════════════════════════════════════
+const GATE_TOKEN_KEY = 'cozu_gate_token';
+function getStoredToken() { return localStorage.getItem(GATE_TOKEN_KEY) || ''; }
 // 生成成功畫面「COZU 雲端資料夾」連結（Drive 目標資料夾，2026-07-29 新增）
 const COZU_DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/17_vnO7KUMFbZEPvwsKNP8LALi3IZHG6p?usp=drive_link';
 
@@ -1159,7 +1286,8 @@ let budgetBannerOpen = false;
 // 載入資料（2026-07-15 起改讀 GAS 中介層，gviz 與 parseGviz/parseGvizDate 退役）
 // ════════════════════════════════════
 async function loadData() {
-  const res = await fetch(DATA_API_URL);
+  const url = DATA_API_URL + '&token=' + encodeURIComponent(getStoredToken());
+  const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   // GAS ContentService 經轉址後 Content-Type 不一定是 JSON，用 text 再 parse 最穩
   const data = JSON.parse(await res.text());
@@ -1999,7 +2127,7 @@ async function handleExport() {
     .map(p => ({ name: p.name, slideId: p.slide_id || '' }));
 
   const payload = {
-    token: EXPORT_TOKEN,
+    token: getStoredToken(),
     customer: customerName,
     items,
   };
@@ -2181,30 +2309,107 @@ function switchTab(tab) {
 })();
 
 // ════════════════════════════════════
+// Access Gate（密語輸入門檻，A 方案，2026-08-21 新增）
+// ════════════════════════════════════
+
+// 密語驗證通過、資料讀取成功後才會呼叫這個函式，把畫面切到正常內容
+function finishInit() {
+  // 右上角：取所有商品中最新的 last_updated_time，若無則顯示載入時間
+  const latestUpdate = products
+    .map(p => p.last_updated_time)
+    .filter(Boolean)
+    .sort()
+    .pop();
+  document.getElementById('lastUpdated').textContent =
+    latestUpdate ? `最後更新 ${latestUpdate}` : (() => {
+      const now = new Date();
+      return `載入於 ${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    })();
+  document.getElementById('stateLoading').style.display = 'none';
+  document.getElementById('cardGrid').style.display     = 'grid';
+  buildRail();
+  render();
+}
+
+// 顯示輸入表單（密語錯誤、或本來就沒有存密語時呼叫）
+function showGateForm(errorText) {
+  document.getElementById('gateChecking').style.display = 'none';
+  document.getElementById('gateForm').style.display = 'block';
+  const errorEl = document.getElementById('gateError');
+  if (errorText) {
+    errorEl.textContent = errorText;
+    errorEl.style.display = 'block';
+  } else {
+    errorEl.style.display = 'none';
+  }
+  const btn = document.getElementById('gateSubmit');
+  btn.disabled = false;
+  btn.textContent = '進入系統';
+  const input = document.getElementById('gateInput');
+  input.value = '';
+  input.focus();
+}
+
+function hideGate() {
+  document.getElementById('gateOverlay').style.display = 'none';
+}
+
+// 帶著目前存在 localStorage 的密語去讀一次商品資料；
+// 成功＝密語正確且資料載入完成，失敗則依錯誤內容分流處理
+async function tryLoadAndEnter() {
+  try {
+    products = await loadData();
+    hideGate();
+    finishInit();
+  } catch (err) {
+    console.error(err);
+    if (String(err.message || '').includes('密語錯誤')) {
+      // 密語本身錯誤：清掉存錯的值，讓使用者重新輸入
+      localStorage.removeItem(GATE_TOKEN_KEY);
+      showGateForm('密語錯誤，請重新輸入');
+    } else {
+      // 網路或其他連線問題：不清密語（可能只是暫時連不上），讓使用者重試
+      showGateForm('連線失敗，請確認網路後再試一次');
+    }
+  }
+}
+
+// 使用者在輸入框按下「進入系統」
+async function submitGateToken() {
+  const input = document.getElementById('gateInput');
+  const token = input.value.trim();
+  if (!token) {
+    document.getElementById('gateError').textContent = '請輸入密語';
+    document.getElementById('gateError').style.display = 'block';
+    return;
+  }
+  localStorage.setItem(GATE_TOKEN_KEY, token);
+
+  document.getElementById('gateForm').style.display = 'none';
+  document.getElementById('gateChecking').style.display = 'flex';
+
+  await tryLoadAndEnter();
+}
+
+// ⚠️ 測試用：清除密語（上線前刪除，見 CSS／HTML 對應註解）
+function devClearGateToken() {
+  localStorage.removeItem(GATE_TOKEN_KEY);
+  location.reload();
+}
+
+// ════════════════════════════════════
 // Init
 // ════════════════════════════════════
 (async () => {
-  try {
-    products = await loadData();
-    // 右上角：取所有商品中最新的 last_updated_time，若無則顯示載入時間
-    const latestUpdate = products
-      .map(p => p.last_updated_time)
-      .filter(Boolean)
-      .sort()
-      .pop();
-    document.getElementById('lastUpdated').textContent =
-      latestUpdate ? `最後更新 ${latestUpdate}` : (() => {
-        const now = new Date();
-        return `載入於 ${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      })();
-    document.getElementById('stateLoading').style.display = 'none';
-    document.getElementById('cardGrid').style.display     = 'grid';
-    buildRail();
-    render();
-  } catch (e) {
-    document.getElementById('stateLoading').style.display = 'none';
-    document.getElementById('stateError').style.display   = 'block';
-    console.error(e);
+  document.getElementById('gateInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitGateToken();
+  });
+
+  if (getStoredToken()) {
+    // 已有存好的密語：靜默嘗試驗證，成功就直接進站，不用使用者再輸入一次
+    await tryLoadAndEnter();
+  } else {
+    showGateForm();
   }
 })();
 </script>
