@@ -784,6 +784,8 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-2);
   text-decoration: none;
 }
+/* 卡片裡若只出現這一行（沒有上方價格級距列可分隔），拔掉分隔虛線 */
+.price-tier-more:only-child { border-top: none; }
 .price-tier-more:hover { color: var(--ink); }
 .price-tier-more-inner {
   display: flex;
