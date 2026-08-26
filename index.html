@@ -255,7 +255,7 @@ a { color: inherit; text-decoration: none; }
 .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 
 /* ── Content ── */
-.content { padding: 24px 0; }
+.content { padding: 20px 0; }
 
 .res-bar {
   display: flex;
@@ -275,7 +275,7 @@ a { color: inherit; text-decoration: none; }
   top: 106px;              /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
   z-index: 5;              /* 低於 topbar(10) */
   border-radius: 8px;
-  padding: 8px 20px;
+  padding: 0 20px;
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
@@ -314,6 +314,10 @@ a { color: inherit; text-decoration: none; }
 .budget-banner-chips { justify-content: center; }
 .budget-banner .chip { background: #fff; padding: 5px 14px; font-size: 12px; }
 .budget-banner .chip.on { background: var(--ink); border-color: var(--ink); }
+/* 2026-08-26 新增：原本 .chip:hover 因優先權打平被 .budget-banner .chip 的 background:#fff 蓋掉，
+   一直沒有 hover 效果；這裡明確指定 .budget-banner 範圍內的 hover／選中狀態，不再依賴撰寫順序 */
+.budget-banner .chip:hover { background: var(--hover); }
+.budget-banner .chip.on:hover { background: var(--ink); border-color: var(--ink); }
 /* 吸頂時縮薄：隱藏名稱與圖示、保留基準小字（2026-07-20 修訂：原版整行標題藏掉，
    捲動深處反而失去「眼前價格是什麼基準」的脈絡，故改為只藏名稱）*/
 .budget-banner.stuck { background: #fff; padding: 12px 20px; border-radius: 0; box-shadow: 0 4px 12px rgba(0,0,0,.03); }
@@ -324,6 +328,42 @@ a { color: inherit; text-decoration: none; }
 .budget-banner.collapsed .budget-banner-chips,
 .budget-banner.collapsed .budget-basis-sep,
 .budget-banner.collapsed .budget-basis { display: none; }
+
+/* 卡片排序（2026-08-26 新增；同日改版：兩顆共用一組容器，中間分隔線，
+   而非各自獨立方框——外框 var(--color-border)、圓角 2px 只在左右外側、
+   交接處直角；hover 沿用跟 budget-banner chip 一致的 var(--hover) 灰底，
+   選中中的按鈕 hover 時維持選中色，不被灰底蓋掉）*/
+.sort-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.sort-toggle-group {
+  display: flex;
+  border: 1px solid var(--color-border);
+}
+.sort-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: #fff;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease;
+}
+.sort-btn:first-child { border-radius: 2px 0 0 2px; }
+.sort-btn:last-child {
+  border-radius: 0 2px 2px 0;
+  border-left: 1px solid var(--color-border);
+}
+.sort-btn:hover:not(.active) { background: var(--hover); }
+
+.sort-btn svg { width: 18px; height: 18px; display: block; color: inherit; }
+.sort-btn.active { color: #345D73; }
 
 /* 選定 MOQ 但商品無對應級距報價的標註（視覺樣式第一版，待 Can 調整）*/
 .card-price-noquote {
@@ -1183,6 +1223,30 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       </div>
     </div>
 
+    <!-- 卡片排序（2026-08-26 新增）：預設價格低→高，可切換高→低 -->
+    <div class="sort-row">
+      <div class="sort-toggle-group">
+        <button class="sort-btn active" id="sortAscBtn" onclick="setSortOrder('asc')" aria-label="價格低到高排序" title="價格：低到高">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 14L2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M10 10H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M6 6H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M18 18H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M19 14V4M19 4L22 7M19 4L16 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+        <button class="sort-btn" id="sortDescBtn" onclick="setSortOrder('desc')" aria-label="價格高到低排序" title="價格：高到低">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 10L2 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M10 14H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M6 18H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M18 6L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M19 10V20M19 20L22 17M19 20L16 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- states -->
     <div class="loading" id="stateLoading">
       <span class="spinner"></span>正在載入商品資料…
@@ -1299,6 +1363,7 @@ let selBudgets = new Set(); // 多選
 let selLeads   = new Set(); // 交期（多選）
 let selStocks  = new Set(); // 庫存狀態（多選）
 let selMoq     = 'all';
+let sortOrder  = 'asc'; // 2026-08-26 新增：卡片價格排序方向，'asc' | 'desc'
 let selectedIds = new Set(); // 已勾選商品的 _id
 let customerName = ''; // 提案客戶名稱
 // 2026-08-19：預算橫幅展開狀態，跟 selMoq 脫鉤——預設收合，選具體 MOQ 時 pickMoq() 會
@@ -1468,16 +1533,29 @@ function matchMoq(moq) {
 }
 
 // 排序基準：未選 MOQ → price（500 份基準）最低值；已選 MOQ → 累進階梯抓到的級距報價最低值
-// 沒有更低階可用或無價格 → Infinity 沉底（僅適用現行「低到高」排序；
-// 未來若加「高到低」排序，無報價商品須改為恆沉底，不能沿用 Infinity）
+// 沒有更低階可用或無價格 → 回傳 null（不可再用 Infinity：2026-08-26 加入「高到低」排序後，
+// Infinity 在 desc 排序會被排到最前面，語意上無報價商品應恆沉底，跟排序方向無關，
+// 沉底邏輯改交給 compareByPrice 統一處理，見下方）
 function priceSortKey(p) {
   if (selMoq !== 'all') {
     const tp = getTierPrice(p);
-    return tp ? lowestPrice(tp) : Infinity;
+    return tp ? lowestPrice(tp) : null;
   }
   const v = lowestPrice(p.price);
   if (v != null) return v;
-  return p.price_max || Infinity;
+  return (p.price_max != null ? p.price_max : null);
+}
+// 2026-08-26 新增：無報價商品（priceSortKey 回傳 null）無論 asc/desc 一律沉底，
+// 兩者都無報價則視為相等（維持原順序，Array.sort 為穩定排序）
+function compareByPrice(a, b) {
+  const ka = priceSortKey(a);
+  const kb = priceSortKey(b);
+  const aNull = (ka == null);
+  const bNull = (kb == null);
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+  return sortOrder === 'asc' ? (ka - kb) : (kb - ka);
 }
 
 function getFiltered() {
@@ -1491,7 +1569,7 @@ function getFiltered() {
     if (!matchBudget(p))                                                    return false;
     if (!matchMoq(p.moq))                                                   return false;
     return true;
-  }).sort((a, b) => priceSortKey(a) - priceSortKey(b)); // 預設：價格低 → 高
+  }).sort(compareByPrice); // 預設：價格低 → 高；sortOrder 可切換高 → 低
 }
 
 // ════════════════════════════════════
@@ -1611,6 +1689,14 @@ function pickMoq(id) {
   document.querySelectorAll('#moqChips .chip').forEach(b => {
     b.classList.toggle('on', b.dataset.moq === id);
   });
+  render();
+}
+// 2026-08-26 新增：卡片排序方向切換（兩顆常駐 icon，選中的那顆是目前排序方向）
+function setSortOrder(order) {
+  if (order === sortOrder) return; // 已經是目前狀態，不重複 render
+  sortOrder = order;
+  document.getElementById('sortAscBtn').classList.toggle('active', order === 'asc');
+  document.getElementById('sortDescBtn').classList.toggle('active', order === 'desc');
   render();
 }
 // 2026-08-19：預算橫幅標題列的手動展開/收合（拿掉原本切換 MOQ 時的整塊背景閃動，
