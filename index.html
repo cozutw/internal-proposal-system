@@ -199,9 +199,9 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-2);
   transition: transform .2s;
   flex-shrink: 0;
-  transform: rotate(90deg);
+  transform: rotate(180deg); /* 2026-08-26：換新箭頭 icon，SVG 原始方向朝下，展開時轉180度朝上 */
 }
-.fgroup.collapsed .fgroup-title.collapsible .fgroup-arrow { transform: rotate(0deg); }
+.fgroup.collapsed .fgroup-title.collapsible .fgroup-arrow { transform: rotate(0deg); } /* 收合時維持 SVG 原始方向（朝下） */
 .fgroup-body { overflow: hidden; }
 .fgroup.collapsible .fgroup-body { padding-top: 8px; }
 .fgroup.collapsed .fgroup-body { display: none; }
@@ -1132,43 +1132,67 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <button class="clear-btn" id="clearBtn" onclick="clearAll()" disabled>清除篩選</button>
     </div>
 
-    <!-- MOQ（2026-07-20 改版：第一層篩選，精確訂購數量；移至 rail 第一位）-->
-    <div class="fgroup">
-      <div class="fgroup-title">訂購數量</div>
-      <div class="chips" id="moqChips">
-        <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
-        <button class="chip" data-moq="50"   onclick="pickMoq('50')">50件</button>
-        <button class="chip" data-moq="100"  onclick="pickMoq('100')">100件</button>
-        <button class="chip" data-moq="200"  onclick="pickMoq('200')">200件</button>
-        <button class="chip" data-moq="300"  onclick="pickMoq('300')">300件</button>
-        <button class="chip" data-moq="500"  onclick="pickMoq('500')">500件</button>
-        <button class="chip" data-moq="1000" onclick="pickMoq('1000')">1000件</button>
+    <!-- MOQ（2026-07-20 改版：第一層篩選，精確訂購數量；移至 rail 第一位；
+         2026-08-26 改版：統一收合機制，跟材質同為預設展開的兩組） -->
+    <div class="fgroup collapsible">
+      <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
+        訂購數量
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
+      </div>
+      <div class="fgroup-body">
+        <div class="chips" id="moqChips">
+          <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
+          <button class="chip" data-moq="50"   onclick="pickMoq('50')">50件</button>
+          <button class="chip" data-moq="100"  onclick="pickMoq('100')">100件</button>
+          <button class="chip" data-moq="200"  onclick="pickMoq('200')">200件</button>
+          <button class="chip" data-moq="300"  onclick="pickMoq('300')">300件</button>
+          <button class="chip" data-moq="500"  onclick="pickMoq('500')">500件</button>
+          <button class="chip" data-moq="1000" onclick="pickMoq('1000')">1000件</button>
+        </div>
       </div>
     </div>
 
-    <!-- 材質 -->
-    <div class="fgroup">
-      <div class="fgroup-title">材質</div>
-      <div id="matOpts"></div>
+    <!-- 材質（2026-08-26 改版：統一收合機制，預設展開） -->
+    <div class="fgroup collapsible">
+      <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
+        材質
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
+      </div>
+      <div class="fgroup-body">
+        <div id="matOpts"></div>
+      </div>
     </div>
 
-    <!-- 交期（2026-07-20 改版：與材質/場合等統一改 checkbox 樣式，多選）-->
-    <div class="fgroup" id="leadGroup" style="display:none">
-      <div class="fgroup-title">交期</div>
-      <div id="leadOpts"></div>
+    <!-- 交期（2026-07-20 改版：與材質/場合等統一改 checkbox 樣式，多選；
+         2026-08-26 改版：統一收合機制，預設收合。display:none 的顯隱邏輯不變，
+         由 JS 依資料是否存在 lead_time 動態控制，跟 collapsed 是否收合互不相干） -->
+    <div class="fgroup collapsible collapsed" id="leadGroup" style="display:none">
+      <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
+        交期
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
+      </div>
+      <div class="fgroup-body">
+        <div id="leadOpts"></div>
+      </div>
     </div>
 
-    <!-- 庫存狀態（2026-07-20 改版：改 checkbox 樣式，多選）-->
-    <div class="fgroup" id="stockGroup" style="display:none">
-      <div class="fgroup-title">庫存狀態</div>
-      <div id="stockOpts"></div>
+    <!-- 庫存狀態（2026-07-20 改版：改 checkbox 樣式，多選；
+         2026-08-26 改版：統一收合機制，預設收合，同上 display:none 邏輯不變） -->
+    <div class="fgroup collapsible collapsed" id="stockGroup" style="display:none">
+      <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
+        庫存狀態
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
+      </div>
+      <div class="fgroup-body">
+        <div id="stockOpts"></div>
+      </div>
     </div>
 
     <!-- 場合 -->
     <div class="fgroup collapsible collapsed">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
         場合
-        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg>
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
       </div>
       <div class="fgroup-body">
         <div id="themeOpts"></div>
@@ -1179,7 +1203,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     <div class="fgroup collapsible collapsed">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
         適合產業
-        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg>
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
       </div>
       <div class="fgroup-body">
         <div id="indOpts"></div>
@@ -1190,7 +1214,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     <div class="fgroup collapsible collapsed">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
         標籤
-        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg>
+        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
       </div>
       <div class="fgroup-body">
         <div id="tagOpts"></div>
