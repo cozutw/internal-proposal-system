@@ -153,8 +153,29 @@ a { color: inherit; text-decoration: none; }
 .rail {
   position: sticky;
   top: 106px; /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
-  padding: 24px 0;
+  padding: 24px 0 0;
+  /* 2026-08-26 改版：rail-head + 訂購數量固定，材質以下（.rail-scroll）獨立捲動，
+     比照 Claude 側欄。用 Flex column 分配空間，不用 JS 量測固定區高度——
+     height 給定總可用空間，.rail-scroll 用 flex:1 + min-height:0 自動吃剩餘空間，
+     瀏覽器自己算，訂購數量收合/展開變高度時也會自動連動，不用額外處理 */
+  height: calc(100vh - 106px - 24px); /* 備援值，實際值由 JS 同步 top 一起動態設定 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+.rail-scroll {
+  flex: 1 1 auto;
+  min-height: 0; /* Flex 子項目要能縮小/捲動的關鍵，不然預設 min-height:auto 會撐爆容器 */
+  overflow-y: auto;
+  padding-bottom: 24px;
+  /* 簡潔捲軸樣式（比照 Claude 側欄）：細窄、無明顯軌道、hover 才加深 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.rail-scroll::-webkit-scrollbar { width: 6px; }
+.rail-scroll::-webkit-scrollbar-track { background: transparent; }
+.rail-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+.rail-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-2); }
 .rail-head {
   display: flex;
   align-items: center;
@@ -333,18 +354,23 @@ a { color: inherit; text-decoration: none; }
    若之後仍覺得空間浪費，下一步是結構重排（收合時併入 sort-row 同一列），見對話紀錄 */
 .budget-banner.collapsed { margin-bottom: 8px; }
 
-/* 卡片排序（2026-08-26 新增；同日改版：兩顆共用一組容器，中間分隔線，
-   而非各自獨立方框——外框 var(--color-border)、圓角 2px 只在左右外側、
-   交接處直角；hover 沿用跟 budget-banner chip 一致的 var(--hover) 灰底，
-   選中中的按鈕 hover 時維持選中色，不被灰底蓋掉）*/
+/* 卡片排序（2026-08-26 新增；同日兩次改版：
+   v1 各自獨立方框 → v2 共用邊框+中間分隔線 → v3（本版）改成 Claude 側欄同款的
+   膠囊 switch：灰底軌道 var(--hover)、選中白底浮出，但拿掉陰影（比照 Claude 樣式，
+   保留立體感的來源改用「白底 vs 透明底」對比，而非陰影），維持扁平化風格跟頁面其他
+   chip 一致；內層圓角沿用既有 --radius:7px，外層 = 內層 + padding(3px) = 10px，
+   維持巢狀圓角視覺正確性）*/
 .sort-row {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 12px;
 }
 .sort-toggle-group {
-  display: flex;
-  border: 1px solid var(--color-border);
+  display: inline-flex;
+  background: var(--hover);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
 }
 .sort-btn {
   display: flex;
@@ -354,20 +380,16 @@ a { color: inherit; text-decoration: none; }
   height: 30px;
   padding: 0;
   border: none;
-  background: #fff;
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--ink-2);
   cursor: pointer;
   transition: color .15s ease, background .15s ease;
 }
-.sort-btn:first-child { border-radius: 2px 0 0 2px; }
-.sort-btn:last-child {
-  border-radius: 0 2px 2px 0;
-  border-left: 1px solid var(--color-border);
-}
-.sort-btn:hover:not(.active) { background: var(--hover); }
+.sort-btn:hover:not(.active) { background: rgba(255,255,255,.6); }
+.sort-btn.active { background: #fff; color: #345D73; }
 
 .sort-btn svg { width: 18px; height: 18px; display: block; color: inherit; }
-.sort-btn.active { color: #345D73; }
 
 /* 選定 MOQ 但商品無對應級距報價的標註（視覺樣式第一版，待 Can 調整）*/
 .card-price-noquote {
@@ -1152,6 +1174,11 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       </div>
     </div>
 
+    <!-- 2026-08-26 新增：材質以下改為獨立捲動區，rail-head + 訂購數量固定不動
+         （比照 Claude 側欄：上方固定、內容區獨立捲動；Flex column + min-height:0，
+         不用 JS 量測高度，瀏覽器自動分配剩餘空間） -->
+    <div class="rail-scroll" id="railScroll">
+
     <!-- 材質（2026-08-26 改版：統一收合機制，預設展開） -->
     <div class="fgroup collapsible">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
@@ -1220,6 +1247,8 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
         <div id="tagOpts"></div>
       </div>
     </div>
+
+    </div><!-- /.rail-scroll -->
   </aside>
 
   <!-- ── Content ── -->
@@ -2425,7 +2454,12 @@ function switchTab(tab) {
 
   function syncStickyTop() {
     const h = topbar.offsetHeight + 'px';
-    if (rail)   rail.style.top   = h;
+    if (rail) {
+      rail.style.top = h;
+      // 2026-08-26：height（非 max-height）跟 top 一起動態同步，24px 是留白緩衝。
+      // rail 現在是 flex column 固定高度容器，.rail-scroll 才是實際捲動區
+      rail.style.height = `calc(100vh - ${h} - 24px)`;
+    }
     if (banner) banner.style.top = h;
   }
   syncStickyTop();
