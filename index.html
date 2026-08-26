@@ -369,7 +369,7 @@ a { color: inherit; text-decoration: none; }
 .sort-toggle-group {
   display: inline-flex;
   background: var(--hover);
-  border-radius: 10px;
+  border-radius: 7px; /* 巢狀圓角公式：內層 4px + padding 3px = 7px，貼合內層弧線 */
   padding: 3px;
   gap: 2px;
 }
@@ -381,7 +381,7 @@ a { color: inherit; text-decoration: none; }
   height: 26px;
   padding: 0;
   border: none;
-  border-radius: var(--radius);
+  border-radius: 4px;
   background: transparent;
   color: var(--ink-2);
   cursor: pointer;
