@@ -168,6 +168,7 @@ a { color: inherit; text-decoration: none; }
   min-height: 0; /* Flex 子項目要能縮小/捲動的關鍵，不然預設 min-height:auto 會撐爆容器 */
   overflow-y: auto;
   padding-bottom: 24px;
+  padding-right: 12px; /* 2026-08-26 新增：捲軸跟內容留一點距離，避免貼太緊 */
   /* 簡潔捲軸樣式（比照 Claude 側欄）：細窄、無明顯軌道、hover 才加深 */
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
@@ -376,8 +377,8 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 30px;
+  width: 32px;
+  height: 26px;
   padding: 0;
   border: none;
   border-radius: var(--radius);
@@ -1155,22 +1156,19 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     </div>
 
     <!-- MOQ（2026-07-20 改版：第一層篩選，精確訂購數量；移至 rail 第一位；
-         2026-08-26 改版：統一收合機制，跟材質同為預設展開的兩組） -->
-    <div class="fgroup collapsible">
-      <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
-        訂購數量
-        <svg class="fgroup-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9L12 15L18 9"/></svg>
-      </div>
-      <div class="fgroup-body">
-        <div class="chips" id="moqChips">
-          <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
-          <button class="chip" data-moq="50"   onclick="pickMoq('50')">50件</button>
-          <button class="chip" data-moq="100"  onclick="pickMoq('100')">100件</button>
-          <button class="chip" data-moq="200"  onclick="pickMoq('200')">200件</button>
-          <button class="chip" data-moq="300"  onclick="pickMoq('300')">300件</button>
-          <button class="chip" data-moq="500"  onclick="pickMoq('500')">500件</button>
-          <button class="chip" data-moq="1000" onclick="pickMoq('1000')">1000件</button>
-        </div>
+         2026-08-26 改版：曾短暫加入收合機制，同日還原為固定展開——
+         此群組固定放在 rail-head 正下方（不進 .rail-scroll），跟收合箭頭
+         的視覺語意（用於捲動區內可變高度的次要篩選）對不上，故不給收合 -->
+    <div class="fgroup">
+      <div class="fgroup-title">訂購數量</div>
+      <div class="chips" id="moqChips">
+        <button class="chip on" data-moq="all" onclick="pickMoq('all')">不限</button>
+        <button class="chip" data-moq="50"   onclick="pickMoq('50')">50件</button>
+        <button class="chip" data-moq="100"  onclick="pickMoq('100')">100件</button>
+        <button class="chip" data-moq="200"  onclick="pickMoq('200')">200件</button>
+        <button class="chip" data-moq="300"  onclick="pickMoq('300')">300件</button>
+        <button class="chip" data-moq="500"  onclick="pickMoq('500')">500件</button>
+        <button class="chip" data-moq="1000" onclick="pickMoq('1000')">1000件</button>
       </div>
     </div>
 
