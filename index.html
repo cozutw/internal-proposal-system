@@ -172,6 +172,12 @@ a { color: inherit; text-decoration: none; }
   /* 簡潔捲軸樣式（比照 Claude 側欄）：細窄、無明顯軌道、hover 才加深 */
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+  /* 2026-08-26 新增：頂部漸層淡出，跟上方固定的訂購數量區塊之間做視覺過渡
+     （比照 Claude 側欄固定項目/捲動列表的交界處理）。用 mask-image 讓內容本身
+     淡出成透明，而不是疊一層跟背景色一樣的色塊——不受背景色影響，之後改頁面
+     底色也不用跟著調這裡 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 100%);
 }
 .rail-scroll::-webkit-scrollbar { width: 6px; }
 .rail-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -201,7 +207,7 @@ a { color: inherit; text-decoration: none; }
 .clear-btn:hover:not(:disabled) { color: var(--ink); background: var(--hover); }
 .clear-btn:disabled { opacity: .35; cursor: default; }
 
-.fgroup { padding: 13px 0; border-top: 1px solid var(--line); }
+.fgroup { padding: 20px 0; border-top: 1px solid var(--line); }
 .fgroup-title {
   font-size: 12px;
   font-weight: 700;
@@ -666,6 +672,14 @@ a { color: inherit; text-decoration: none; }
   color: var(--color-text-tertiary);
   font-size: 12px;
 }
+/* 2026-08-26 新增：15 秒逾時狀態。文字用跟 gate-checking 一致的中性灰階，
+   不用紅色警示——中性語氣，不製造焦慮，但明確給出路（重新整理按鈕） */
+.gate-timeout { width: 100%; text-align: center; }
+.gate-timeout-text {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
+}
 .gate-form { width: 100%; }
 .gate-sub {
   font-size: 12px;
@@ -1075,7 +1089,14 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
     <div class="gate-title">禮贈品提案系統</div>
 
     <div class="gate-checking" id="gateChecking">
-      <span class="spinner"></span>正在驗證身份…
+      <span class="spinner"></span><span id="gateCheckingText">正在驗證身份…</span>
+    </div>
+
+    <!-- 2026-08-26 新增：驗證超過 15 秒視為連線異常，改顯示文字＋重新整理按鈕，
+         不讓使用者無限期乾等一顆轉圈圈 -->
+    <div class="gate-timeout" id="gateTimeout" style="display:none">
+      <div class="gate-timeout-text">網路出現連線異常，請重新整理頁面</div>
+      <button class="gate-submit" onclick="location.reload()">重新整理</button>
     </div>
 
     <div class="gate-form" id="gateForm" style="display:none">
@@ -2502,7 +2523,9 @@ function finishInit() {
 
 // 顯示輸入表單（密語錯誤、或本來就沒有存密語時呼叫）
 function showGateForm(errorText) {
+  clearGateTimers();
   document.getElementById('gateChecking').style.display = 'none';
+  document.getElementById('gateTimeout').style.display = 'none';
   document.getElementById('gateForm').style.display = 'block';
   const errorEl = document.getElementById('gateError');
   if (errorText) {
@@ -2542,12 +2565,38 @@ function toggleGatePassword() {
 
 // 帶著目前存在 localStorage 的密語去讀一次商品資料；
 // 成功＝密語正確且資料載入完成，失敗則依錯誤內容分流處理
+// 2026-08-26 新增：分階段文字＋15秒逾時（見 startGateStagedFeedback），
+// 使用者只知道自己在登入提案系統，不提 GAS／快取等技術細節
+let gateTimers = [];
+function clearGateTimers() {
+  gateTimers.forEach(id => clearTimeout(id));
+  gateTimers = [];
+}
+function startGateStagedFeedback() {
+  clearGateTimers();
+  const textEl = document.getElementById('gateCheckingText');
+  const checkingEl = document.getElementById('gateChecking');
+  const timeoutEl = document.getElementById('gateTimeout');
+  if (textEl) textEl.textContent = '正在驗證身份…';
+  if (checkingEl) checkingEl.style.display = 'flex';
+  if (timeoutEl) timeoutEl.style.display = 'none';
+
+  gateTimers.push(setTimeout(() => { if (textEl) textEl.textContent = '資料庫連線中'; }, 3000));
+  gateTimers.push(setTimeout(() => { if (textEl) textEl.textContent = '讀取商品資料，請稍候'; }, 8000));
+  gateTimers.push(setTimeout(() => {
+    if (checkingEl) checkingEl.style.display = 'none';
+    if (timeoutEl) timeoutEl.style.display = 'block';
+  }, 15000));
+}
 async function tryLoadAndEnter() {
+  startGateStagedFeedback();
   try {
     products = await loadData();
+    clearGateTimers();
     hideGate();
     finishInit();
   } catch (err) {
+    clearGateTimers();
     console.error(err);
     if (String(err.message || '').includes('密語錯誤')) {
       // 密語本身錯誤：清掉存錯的值，讓使用者重新輸入
