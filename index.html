@@ -152,30 +152,24 @@ a { color: inherit; text-decoration: none; }
 /* ── Rail ── */
 .rail {
   position: sticky;
-  top: 106px; /* 備援值，實際值由 JS 依 topbar 實際高度動態設定 */
+  top: 106px; /* 備援值，實際值由 JS 動態設定 */
   padding: 24px 0 0;
-  /* 2026-08-26 改版：rail-head + 訂購數量固定，材質以下（.rail-scroll）獨立捲動，
-     比照 Claude 側欄。用 Flex column 分配空間，不用 JS 量測固定區高度——
-     height 給定總可用空間，.rail-scroll 用 flex:1 + min-height:0 自動吃剩餘空間，
-     瀏覽器自己算，訂購數量收合/展開變高度時也會自動連動，不用額外處理 */
-  height: calc(100vh - 106px - 24px); /* 備援值，實際值由 JS 同步 top 一起動態設定 */
+  /* rail-head + 訂購數量固定，材質以下獨立捲動；Flex column 分配空間 */
+  height: calc(100vh - 106px - 24px); /* 備援值，實際值由 JS 動態設定 */
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 .rail-scroll {
   flex: 1 1 auto;
-  min-height: 0; /* Flex 子項目要能縮小/捲動的關鍵，不然預設 min-height:auto 會撐爆容器 */
+  min-height: 0; /* Flex 子項目要能捲動的必要設定 */
   overflow-y: auto;
   padding-bottom: 24px;
-  padding-right: 12px; /* 2026-08-26 新增：捲軸跟內容留一點距離，避免貼太緊 */
-  /* 簡潔捲軸樣式（比照 Claude 側欄）：細窄、無明顯軌道、hover 才加深 */
+  padding-right: 12px;
+  /* 簡潔捲軸樣式 */
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
-  /* 2026-08-26 新增：頂部漸層淡出，跟上方固定的訂購數量區塊之間做視覺過渡
-     （比照 Claude 側欄固定項目/捲動列表的交界處理）。用 mask-image 讓內容本身
-     淡出成透明，而不是疊一層跟背景色一樣的色塊——不受背景色影響，之後改頁面
-     底色也不用跟著調這裡 */
+  /* 頂部漸層淡出，跟上方固定區塊做視覺過渡 */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 100%);
           mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 100%);
 }
@@ -208,6 +202,7 @@ a { color: inherit; text-decoration: none; }
 .clear-btn:disabled { opacity: .35; cursor: default; }
 
 .fgroup { padding: 20px 0; border-top: 1px solid var(--line); }
+.rail-scroll .fgroup { padding: 12px 0; }
 .fgroup-title {
   font-size: 12px;
   font-weight: 700;
@@ -227,9 +222,9 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-2);
   transition: transform .2s;
   flex-shrink: 0;
-  transform: rotate(180deg); /* 2026-08-26：換新箭頭 icon，SVG 原始方向朝下，展開時轉180度朝上 */
+  transform: rotate(180deg); /* 展開＝朝上 */
 }
-.fgroup.collapsed .fgroup-title.collapsible .fgroup-arrow { transform: rotate(0deg); } /* 收合時維持 SVG 原始方向（朝下） */
+.fgroup.collapsed .fgroup-title.collapsible .fgroup-arrow { transform: rotate(0deg); } /* 收合＝朝下 */
 .fgroup-body { overflow: hidden; }
 .fgroup.collapsible .fgroup-body { padding-top: 8px; }
 .fgroup.collapsed .fgroup-body { display: none; }
@@ -1176,10 +1171,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <button class="clear-btn" id="clearBtn" onclick="clearAll()" disabled>清除篩選</button>
     </div>
 
-    <!-- MOQ（2026-07-20 改版：第一層篩選，精確訂購數量；移至 rail 第一位；
-         2026-08-26 改版：曾短暫加入收合機制，同日還原為固定展開——
-         此群組固定放在 rail-head 正下方（不進 .rail-scroll），跟收合箭頭
-         的視覺語意（用於捲動區內可變高度的次要篩選）對不上，故不給收合 -->
+    <!-- 訂購數量：第一層篩選，固定不收合 -->
     <div class="fgroup">
       <div class="fgroup-title">訂購數量</div>
       <div class="chips" id="moqChips">
@@ -1193,12 +1185,10 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       </div>
     </div>
 
-    <!-- 2026-08-26 新增：材質以下改為獨立捲動區，rail-head + 訂購數量固定不動
-         （比照 Claude 側欄：上方固定、內容區獨立捲動；Flex column + min-height:0，
-         不用 JS 量測高度，瀏覽器自動分配剩餘空間） -->
+    <!-- 材質以下獨立捲動 -->
     <div class="rail-scroll" id="railScroll">
 
-    <!-- 材質（2026-08-26 改版：統一收合機制，預設展開） -->
+    <!-- 材質：預設展開 -->
     <div class="fgroup collapsible">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
         材質
@@ -1209,9 +1199,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       </div>
     </div>
 
-    <!-- 交期（2026-07-20 改版：與材質/場合等統一改 checkbox 樣式，多選；
-         2026-08-26 改版：統一收合機制，預設收合。display:none 的顯隱邏輯不變，
-         由 JS 依資料是否存在 lead_time 動態控制，跟 collapsed 是否收合互不相干） -->
+    <!-- 交期：display:none 由 JS 依資料是否存在動態控制 -->
     <div class="fgroup collapsible collapsed" id="leadGroup" style="display:none">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
         交期
@@ -1222,8 +1210,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       </div>
     </div>
 
-    <!-- 庫存狀態（2026-07-20 改版：改 checkbox 樣式，多選；
-         2026-08-26 改版：統一收合機制，預設收合，同上 display:none 邏輯不變） -->
+    <!-- 庫存狀態 -->
     <div class="fgroup collapsible collapsed" id="stockGroup" style="display:none">
       <div class="fgroup-title collapsible" onclick="toggleFgroup(this)">
         庫存狀態
@@ -2475,9 +2462,7 @@ function switchTab(tab) {
     const h = topbar.offsetHeight + 'px';
     if (rail) {
       rail.style.top = h;
-      // 2026-08-26：height（非 max-height）跟 top 一起動態同步，24px 是留白緩衝。
-      // rail 現在是 flex column 固定高度容器，.rail-scroll 才是實際捲動區
-      rail.style.height = `calc(100vh - ${h} - 24px)`;
+      rail.style.height = `calc(100vh - ${h} - 24px)`; // .rail-scroll 才是實際捲動區
     }
     if (banner) banner.style.top = h;
   }
