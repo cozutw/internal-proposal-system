@@ -672,7 +672,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--color-text-tertiary);
   font-size: 12px;
 }
-/* 2026-08-26 新增：15 秒逾時狀態。文字用跟 gate-checking 一致的中性灰階，
+/* 2026-08-26 新增：25 秒逾時狀態。文字用跟 gate-checking 一致的中性灰階，
    不用紅色警示——中性語氣，不製造焦慮，但明確給出路（重新整理按鈕） */
 .gate-timeout { width: 100%; text-align: center; }
 .gate-timeout-text {
@@ -1092,7 +1092,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
       <span class="spinner"></span><span id="gateCheckingText">正在驗證身份…</span>
     </div>
 
-    <!-- 2026-08-26 新增：驗證超過 15 秒視為連線異常，改顯示文字＋重新整理按鈕，
+    <!-- 2026-08-26 新增：驗證超過 25 秒視為連線異常（實測平均首次驗證可能到 20 秒，15 秒太容易誤判），改顯示文字＋重新整理按鈕，
          不讓使用者無限期乾等一顆轉圈圈 -->
     <div class="gate-timeout" id="gateTimeout" style="display:none">
       <div class="gate-timeout-text">網路出現連線異常，請重新整理頁面</div>
@@ -2565,7 +2565,7 @@ function toggleGatePassword() {
 
 // 帶著目前存在 localStorage 的密語去讀一次商品資料；
 // 成功＝密語正確且資料載入完成，失敗則依錯誤內容分流處理
-// 2026-08-26 新增：分階段文字＋15秒逾時（見 startGateStagedFeedback），
+// 2026-08-26 新增：分階段文字＋25秒逾時（見 startGateStagedFeedback），
 // 使用者只知道自己在登入提案系統，不提 GAS／快取等技術細節
 let gateTimers = [];
 function clearGateTimers() {
@@ -2586,7 +2586,7 @@ function startGateStagedFeedback() {
   gateTimers.push(setTimeout(() => {
     if (checkingEl) checkingEl.style.display = 'none';
     if (timeoutEl) timeoutEl.style.display = 'block';
-  }, 15000));
+  }, 25000));
 }
 async function tryLoadAndEnter() {
   startGateStagedFeedback();
