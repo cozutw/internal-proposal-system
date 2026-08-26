@@ -276,7 +276,7 @@ a { color: inherit; text-decoration: none; }
   z-index: 5;              /* 低於 topbar(10) */
   border-radius: 8px;
   padding: 0 20px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -328,6 +328,10 @@ a { color: inherit; text-decoration: none; }
 .budget-banner.collapsed .budget-banner-chips,
 .budget-banner.collapsed .budget-basis-sep,
 .budget-banner.collapsed .budget-basis { display: none; }
+/* 2026-08-26 新增（方案 B 止血）：收合時內容只剩一行標題，16px margin 是為展開態的
+   chips 留白設計的，收合態沿用顯得太鬆，故收合態單獨壓縮到 8px。
+   若之後仍覺得空間浪費，下一步是結構重排（收合時併入 sort-row 同一列），見對話紀錄 */
+.budget-banner.collapsed { margin-bottom: 8px; }
 
 /* 卡片排序（2026-08-26 新增；同日改版：兩顆共用一組容器，中間分隔線，
    而非各自獨立方框——外框 var(--color-border)、圓角 2px 只在左右外側、
@@ -346,8 +350,8 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 32px;
+  width: 40px;
+  height: 30px;
   padding: 0;
   border: none;
   background: #fff;
