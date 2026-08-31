@@ -280,6 +280,10 @@ body {
   color: var(--color-text-primary);
   white-space: nowrap;
 }
+.step-verify.optional {
+  border-color: var(--color-text-tertiary);
+  color: var(--color-text-tertiary);
+}
 
 /* ── Right panel: Field table ── */
 .field-panel {
@@ -470,7 +474,7 @@ code {
             <div class="step-header">
               <div>
                 <div class="step-role toothpaste">牙膏</div>
-                <div class="step-title">填<a href="https://docs.google.com/spreadsheets/d/1nd-6QTqAC2OfcZGZKO4XC3XyVRra9BdtDL703nba-ms/edit?pli=1&gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>（填寫編號、品名、樣品位置、照片狀態），並把需要攝影的商品放在樣品室的待攝影區</div>
+                <div class="step-title">填<a href="https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>（填寫編號、品名、樣品位置、照片狀態），並把需要攝影的商品放在樣品室的待攝影區</div>
               </div>
             </div>
             <ul class="step-sub-list">
@@ -496,7 +500,7 @@ code {
             <ul class="step-sub-list">
               <li>將原始圖片存至 NAS 對應資料夾 - 【資訊共用文件夾 - 2026 新樣品照】</li>
               <li>將去背圖上傳至 Shopline 圖片庫，複製 URL</li>
-              <li>將 Shopline URL 直接填回<a href="https://docs.google.com/spreadsheets/d/1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">小表</a>的 <code>image_url</code> 欄位</li>
+              <li>將 Shopline URL 直接填回<a href="https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>的圖片網址欄位</li>
               <li>通知牙膏圖片已完成，更改大表的照片狀態</li>
             </ul>
           </div>
@@ -504,18 +508,15 @@ code {
 
         <!-- Step 4 -->
         <div class="step">
-          <div class="step-line"><div class="step-num toothpaste">4</div></div>
+          <div class="step-line"><div class="step-num design">4</div></div>
           <div class="step-body">
             <div class="step-header">
               <div>
-                <div class="step-role toothpaste">牙膏</div>
-                <div class="step-title">填寫大表補充資訊，並轉換建入小表資料庫</div>
+                <div class="step-role design">設計</div>
+                <div class="step-title">製作樣品對應投影片，填入大表簡報編號</div>
               </div>
             </div>
-            <ul class="step-sub-list">
-              <li>對照右側欄位對照表，將資訊填入<a href="https://docs.google.com/spreadsheets/d/1nd-6QTqAC2OfcZGZKO4XC3XyVRra9BdtDL703nba-ms/edit?pli=1&gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a></li>
-              <li>將<a href="https://docs.google.com/spreadsheets/d/1nd-6QTqAC2OfcZGZKO4XC3XyVRra9BdtDL703nba-ms/edit?pli=1&gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>的內容轉換至<a href="https://docs.google.com/spreadsheets/d/1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">小表</a>資訊</li>
-            </ul>
+            <div class="step-sub">製作樣品對應投影片，並填入<a href="https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>的簡報編號欄位</div>
           </div>
         </div>
 
@@ -526,9 +527,27 @@ code {
             <div class="step-header">
               <div>
                 <div class="step-role toothpaste">牙膏</div>
+                <div class="step-title">填寫大表補充資訊，並轉換建入小表資料庫</div>
+              </div>
+            </div>
+            <ul class="step-sub-list">
+              <li>對照右側欄位對照表，將資訊填入<a href="https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a></li>
+              <li>將<a href="https://docs.google.com/spreadsheets/d/1MUbq9TslQi7-qE1qCRPqYU9nDh-GCAC_FRmUCyGMjR8/edit?gid=695435408#gid=695435408" target="_blank" rel="noopener noreferrer">大表</a>的內容轉換至<a href="https://docs.google.com/spreadsheets/d/1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">小表</a>資訊</li>
+              <li>大表轉小表 SOP 文件請參考<a href="https://docs.google.com/document/d/1VyR9gFCL1sTZ68yzKwNOQzR3y9DnC31KZ3n96v7WVig/edit?tab=t.0" target="_blank" rel="noopener noreferrer">雲端硬碟連結</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="step">
+          <div class="step-line"><div class="step-num toothpaste">6</div></div>
+          <div class="step-body">
+            <div class="step-header">
+              <div>
+                <div class="step-role toothpaste">牙膏</div>
                 <div class="step-title-row">
                   <div class="step-title">驗收查詢系統資料顯示正確，並通知設計</div>
-                  <span class="step-verify">第一次驗收</span>
+                  <span class="step-verify">驗收</span>
                 </div>
               </div>
             </div>
@@ -540,24 +559,6 @@ code {
           </div>
         </div>
 
-        <!-- Step 6 -->
-        <div class="step">
-          <div class="step-line"><div class="step-num design">6</div></div>
-          <div class="step-body">
-            <div class="step-header">
-              <div>
-                <div class="step-role design">設計</div>
-                <div class="step-title-row">
-                  <div class="step-title">製作樣品對應投影片，若需要官網上架也一併進行，並驗收查詢系統完整顯示</div>
-                  <span class="step-verify">第二次驗收</span>
-                </div>
-              </div>
-            </div>
-            <div class="step-sub">製作樣品對應投影片，並填入<a href="https://docs.google.com/spreadsheets/d/1nFmuYe9eDSQs5EmIsewnptxx-w7phwxvpGzSYL3hKBE/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">小表</a>的 <code>slide_id</code></div>
-            <div class="step-sub">將商品上架至 COZU 官網後，確認查詢系統的圖片、內容與官網資訊一致。</div>
-          </div>
-        </div>
-
         <!-- Step 7 -->
         <div class="step">
           <div class="step-line"><div class="step-num design">7</div></div>
@@ -565,10 +566,27 @@ code {
             <div class="step-header">
               <div>
                 <div class="step-role design">設計</div>
-                <div class="step-title">在公司 LINE 群組發通知，附官網與查詢系統截圖</div>
+                <div class="step-title-row">
+                  <div class="step-title">將商品上架至 COZU 官網，並驗收查詢系統完整顯示</div>
+                  <span class="step-verify optional">視需求</span>
+                </div>
               </div>
             </div>
-            <div class="step-sub">驗收完成後，於公司 LINE 群組通知所有人，附上官網與查詢系統截圖供大家確認。</div>
+            <div class="step-sub">若該樣品不需要上官網，本步驟可略過。需要上官網時，於商品上架後確認查詢系統的圖片、內容與官網資訊一致。</div>
+          </div>
+        </div>
+
+        <!-- Step 8 -->
+        <div class="step">
+          <div class="step-line"><div class="step-num toothpaste">8</div></div>
+          <div class="step-body">
+            <div class="step-header">
+              <div>
+                <div class="step-role toothpaste">牙膏</div>
+                <div class="step-title">在公司 LINE 群組發通知，附查詢系統截圖</div>
+              </div>
+            </div>
+            <div class="step-sub">驗收完成後，於公司 LINE 群組通知所有人，附上查詢系統截圖供大家確認。</div>
           </div>
         </div>
 
@@ -595,7 +613,7 @@ code {
             <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">商品名稱</div>
-          <div class="field-note">中文為主，可含英文副標。來源：步驟 2 牙膏填寫品名，經步驟 4 牙膏轉入小表</div>
+          <div class="field-note">中文為主，可含英文副標。來源：步驟 2 牙膏填寫品名，經步驟 5 牙膏轉入小表</div>
         </div>
 
         <div class="field-row">
@@ -605,7 +623,7 @@ code {
             <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">報價表編號</div>
-          <div class="field-note">對應大表商品編號，用於回查原始資料。來源：步驟 2 牙膏填寫編號，經步驟 4 牙膏轉入小表</div>
+          <div class="field-note">對應大表商品編號，用於回查原始資料。來源：步驟 2 牙膏填寫編號，經步驟 5 牙膏轉入小表</div>
         </div>
 
         <div class="field-row">
@@ -736,7 +754,7 @@ code {
             <span class="field-owner design">設計</span>
           </div>
           <div class="field-desc">去背圖公開 URL</div>
-          <div class="field-note">步驟 3 設計上傳 Shopline 後直接填入，必須是可公開存取的完整網址。</div>
+          <div class="field-note">來源：步驟 3 設計上傳 Shopline 後填入大表圖片網址欄位，經步驟 5 牙膏轉入小表。必須是可公開存取的完整網址。</div>
         </div>
 
         <div class="field-row">
@@ -761,7 +779,7 @@ code {
             <span class="field-owner toothpaste">牙膏</span>
           </div>
           <div class="field-desc">樣品擺放位置</div>
-          <div class="field-note">無樣品時留空。來源：步驟 2 牙膏填寫樣品位置，經步驟 4 牙膏轉入小表。例：展示架 A3、倉庫B區第二層</div>
+          <div class="field-note">無樣品時留空。來源：步驟 2 牙膏填寫樣品位置，經步驟 5 牙膏轉入小表。例：展示架 A3、倉庫B區第二層</div>
         </div>
 
         <div class="field-row">
@@ -784,7 +802,7 @@ code {
             <span class="field-owner design">設計</span>
           </div>
           <div class="field-desc">母簡報頁面代號（可多版本）</div>
-          <div class="field-note">新品上架時留空。格式：<code>版本名稱:頁面代號</code>，多版本以 <code>|</code> 分隔。頁面代號須與母簡報該頁「講者備忘錄」文字完全相符</div>
+          <div class="field-note">新品上架時留空。來源：步驟 4 設計填入大表簡報編號欄位，經步驟 5 牙膏轉入小表。格式：<code>版本名稱:頁面代號</code>，多版本以 <code>|</code> 分隔。頁面代號須與母簡報該頁「講者備忘錄」文字完全相符</div>
         </div>
 
         <div class="field-row">
@@ -811,7 +829,7 @@ code {
 </div><!-- /shell -->
 
 <script>
-const LAST_UPDATED = '2026-08-11';
+const LAST_UPDATED = '2026-08-31';
 document.getElementById('lastUpdated').textContent = '最後更新 ' + LAST_UPDATED;
 document.getElementById('footerDate').textContent  = '最後更新：' + LAST_UPDATED;
 </script>
