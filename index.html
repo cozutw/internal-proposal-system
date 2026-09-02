@@ -325,22 +325,14 @@ a { color: inherit; text-decoration: none; }
    三種定位互斥，由 JS 依 getBoundingClientRect() 判斷後加類別。
    顯示/隱藏改用 opacity + visibility（而非 display），才能套 ease-in-out 淡入淡出；
    .budget-hint 本身一直是 display:flex，即使隱藏也保留版面量測用的尺寸，
-   讓 JS 的 getBoundingClientRect() 裁邊判斷不用等 show 才能量到 */
-/* 2026-09-02 新增：新手引導 hint，提示「先選訂購數量再設定預算」。
-   顯示條件見 JS updateBudgetHint()：未選 MOQ 且橫幅未展開時才顯示，屬狀態驅動、
-   不用 localStorage，跟 clearAll() 重置篩選後會再次出現一致（方案 A，見對話紀錄）。
-   預設貼右側；.flip 為視窗空間不足時貼左側；.below 為連左側也不夠時貼下方，
-   三種定位互斥，由 JS 依 getBoundingClientRect() 判斷後加類別。
-   顯示/隱藏改用 opacity + visibility（而非 display），才能套 ease-in-out 淡入淡出；
-   .budget-hint 本身一直是 display:flex，即使隱藏也保留版面量測用的尺寸，
    讓 JS 的 getBoundingClientRect() 裁邊判斷不用等 show 才能量到。
-   2026-09-02 二次修訂：底色改半透明後，原本「方框＋獨立箭頭」兩個色塊疊在一起，
-   重疊處兩層 80% 透明疊加變成約 96% 不透明，比周圍深，接縫處會看到一條線
-   （不疊則相反：露出背景，看起來是一條亮線）——這是半透明色塊天生的問題，
-   疊多疊少都治標不治本。改用 clip-path 把方框跟箭頭切成同一個色塊、只塗一次顏色，
-   從根本上不可能有接縫。三個方向各自的箭頭位置改在 clip-path 裡直接畫出，
-   不再需要 .budget-hint-arrow 這個獨立元素；padding 需預留箭頭尖角佔用的 6px 空間，
-   避免文字被切到（見下方各方向 padding 設定） */
+   2026-09-02 三次修訂：曾試過 clip-path 把方框＋箭頭切成同一色塊解決半透明疊色接縫，
+   但代價是犧牲了 border-radius（clip-path 直角座標會蓋掉圓角，斜角逼近視覺又太生硬）。
+   改回較簡單的做法：方框維持真正半透明＋正常 border-radius；箭頭改用「實色」
+   （算出半透明色疊在頁面底色 #fafafa 上實際呈現的顏色，直接當實色用），
+   實色跟實色相鄰不會有透明度疊加的數學問題，也不用犧牲圓角。
+   代價：這個實色是假設背景是頁面底色算出來的固定值，如果 tooltip 剛好疊到明顯不同色的
+   區塊（例如商品卡片），箭頭跟方框可能有些微色差，但不會像之前那樣出現明顯亮線/暗線 */
 .budget-hint {
   display: flex;
   align-items: center;
@@ -349,7 +341,7 @@ a { color: inherit; text-decoration: none; }
   top: 50%;
   left: 100%;
   transform: translateY(-50%);
-  margin-left: 6px;
+  margin-left: 12px;
   /* 底色＝--color-text-primary 疊 80% 透明；color-mix 不支援的舊瀏覽器退回 rgba 寫死值 */
   background: rgba(35, 42, 49, .8);
   background: color-mix(in srgb, var(--color-text-primary) 80%, transparent);
@@ -358,74 +350,52 @@ a { color: inherit; text-decoration: none; }
   font-weight: 400;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  padding: 6px 8px 6px 14px;
+  padding: 6px 8px;
+  border-radius: 4px;
   cursor: default;
   pointer-events: none;
   z-index: 6;
   opacity: 0;
   visibility: hidden;
   transition: opacity .2s ease-in-out, visibility .2s ease-in-out;
-  /* 箭頭朝左（指向橫幅）：主方框從 x=6px 開始，左側 6px 挖出朝左的尖角；
-     四個直角各切掉 3px 做斜角，逼近原本 4px border-radius 的視覺效果
-     （clip-path 是真正的圓角要吃固定像素座標的 path()，跟目前這種靠文字自動撐寬、
-     不用 JS 量測寬高的做法衝突，斜角是純 CSS、不用另外寫量測邏輯的折衷解法） */
-  clip-path: polygon(
-    0 50%,
-    6px calc(50% - 5px),
-    6px 3px,
-    9px 0,
-    calc(100% - 3px) 0,
-    100% 3px,
-    100% calc(100% - 3px),
-    calc(100% - 3px) 100%,
-    9px 100%,
-    6px calc(100% - 3px),
-    6px calc(50% + 5px)
-  );
 }
 .budget-hint.show { opacity: 1; visibility: visible; }
-.budget-hint.flip {
+/* 箭頭：實色三角形（#4E5459，即 --color-text-primary 80% 透明疊在頁面底色 #fafafa
+   上算出來的結果色），預設朝左指向橫幅，.flip 朝右，.below 朝上 */
+.budget-hint-arrow {
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  margin-top: -5px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 6px solid #4E5459;
+}
+.budget-hint.flip { left: auto; right: 100%; margin-left: 0; margin-right: 12px; }
+.budget-hint.flip .budget-hint-arrow {
   left: auto;
-  right: 100%;
-  margin-left: 0;
-  margin-right: 6px;
-  padding: 6px 14px 6px 8px;
-  /* 箭頭朝右（指向橫幅）：主方框到 x=(100%-6px) 為止，右側 6px 挖出朝右的尖角，四角同樣切斜角 */
-  clip-path: polygon(
-    3px 0,
-    calc(100% - 9px) 0,
-    calc(100% - 6px) 3px,
-    calc(100% - 6px) calc(50% - 5px),
-    100% 50%,
-    calc(100% - 6px) calc(50% + 5px),
-    calc(100% - 6px) calc(100% - 3px),
-    calc(100% - 9px) 100%,
-    3px 100%,
-    0 calc(100% - 3px),
-    0 3px
-  );
+  right: -5px;
+  border-right: none;
+  border-left: 6px solid #4E5459;
 }
 .budget-hint.below {
   left: 50%;
   top: 100%;
   transform: translateX(-50%);
   margin-left: 0;
-  margin-top: 6px;
-  padding: 12px 8px 6px 8px;
-  /* 箭頭朝上（指向橫幅）：主方框從 y=6px 開始，上方 6px 挖出朝上的尖角，四角同樣切斜角 */
-  clip-path: polygon(
-    calc(50% - 5px) 6px,
-    50% 0,
-    calc(50% + 5px) 6px,
-    calc(100% - 3px) 6px,
-    100% 9px,
-    100% calc(100% - 3px),
-    calc(100% - 3px) 100%,
-    3px 100%,
-    0 calc(100% - 3px),
-    0 9px,
-    3px 6px
-  );
+  margin-top: 10px;
+}
+.budget-hint.below .budget-hint-arrow {
+  left: 50%;
+  top: -5px;
+  margin-top: 0;
+  margin-left: -5px;
+  border-top: none;
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+  border-bottom: 6px solid #4E5459;
 }
 /* 基準說明（2026-07-20：原 res-remark 併入，常駐顯示目前價格基準）；
    2026-08-19：加 opacity transition，MOQ 切換文字內容時用 fade 取代原本的整塊背景閃動 */
@@ -1386,6 +1356,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
         <svg class="budget-banner-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
         <div class="budget-hint" id="budgetHint">
           <span class="budget-hint-text">先選左側訂購數量再選預算，讓價格區間更精準</span>
+          <span class="budget-hint-arrow"></span>
         </div>
       </div>
       <div class="chips budget-banner-chips" id="budgetChips">
