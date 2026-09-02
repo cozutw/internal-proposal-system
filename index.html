@@ -1858,6 +1858,7 @@ function setSortOrder(order) {
 function toggleBudgetBanner() {
   budgetBannerOpen = !budgetBannerOpen;
   document.getElementById('budgetBanner').classList.toggle('collapsed', !budgetBannerOpen);
+  updateBudgetHint();
 }
 // 基準說明文字的 fade 切換：先比對內容是否真的變了，沒變就不觸發，
 // 變了才淡出→換字→淡入，時間要對應 CSS 的 .budget-basis transition（150ms）
