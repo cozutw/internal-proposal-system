@@ -365,14 +365,21 @@ a { color: inherit; text-decoration: none; }
   opacity: 0;
   visibility: hidden;
   transition: opacity .2s ease-in-out, visibility .2s ease-in-out;
-  /* 箭頭朝左（指向橫幅）：主方框從 x=6px 開始，左側 6px 挖出朝左的尖角 */
+  /* 箭頭朝左（指向橫幅）：主方框從 x=6px 開始，左側 6px 挖出朝左的尖角；
+     四個直角各切掉 3px 做斜角，逼近原本 4px border-radius 的視覺效果
+     （clip-path 是真正的圓角要吃固定像素座標的 path()，跟目前這種靠文字自動撐寬、
+     不用 JS 量測寬高的做法衝突，斜角是純 CSS、不用另外寫量測邏輯的折衷解法） */
   clip-path: polygon(
     0 50%,
     6px calc(50% - 5px),
-    6px 0,
-    100% 0,
-    100% 100%,
-    6px 100%,
+    6px 3px,
+    9px 0,
+    calc(100% - 3px) 0,
+    100% 3px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    9px 100%,
+    6px calc(100% - 3px),
     6px calc(50% + 5px)
   );
 }
@@ -383,15 +390,19 @@ a { color: inherit; text-decoration: none; }
   margin-left: 0;
   margin-right: 6px;
   padding: 6px 14px 6px 8px;
-  /* 箭頭朝右（指向橫幅）：主方框到 x=(100%-6px) 為止，右側 6px 挖出朝右的尖角 */
+  /* 箭頭朝右（指向橫幅）：主方框到 x=(100%-6px) 為止，右側 6px 挖出朝右的尖角，四角同樣切斜角 */
   clip-path: polygon(
-    0 0,
-    calc(100% - 6px) 0,
+    3px 0,
+    calc(100% - 9px) 0,
+    calc(100% - 6px) 3px,
     calc(100% - 6px) calc(50% - 5px),
     100% 50%,
     calc(100% - 6px) calc(50% + 5px),
-    calc(100% - 6px) 100%,
-    0 100%
+    calc(100% - 6px) calc(100% - 3px),
+    calc(100% - 9px) 100%,
+    3px 100%,
+    0 calc(100% - 3px),
+    0 3px
   );
 }
 .budget-hint.below {
@@ -401,15 +412,19 @@ a { color: inherit; text-decoration: none; }
   margin-left: 0;
   margin-top: 6px;
   padding: 12px 8px 6px 8px;
-  /* 箭頭朝上（指向橫幅）：主方框從 y=6px 開始，上方 6px 挖出朝上的尖角 */
+  /* 箭頭朝上（指向橫幅）：主方框從 y=6px 開始，上方 6px 挖出朝上的尖角，四角同樣切斜角 */
   clip-path: polygon(
     calc(50% - 5px) 6px,
     50% 0,
     calc(50% + 5px) 6px,
-    100% 6px,
-    100% 100%,
-    0 100%,
-    0 6px
+    calc(100% - 3px) 6px,
+    100% 9px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    3px 100%,
+    0 calc(100% - 3px),
+    0 9px,
+    3px 6px
   );
 }
 /* 基準說明（2026-07-20：原 res-remark 併入，常駐顯示目前價格基準）；
