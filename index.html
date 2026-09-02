@@ -307,6 +307,7 @@ a { color: inherit; text-decoration: none; }
   transition: padding .2s ease, border-radius .2s ease, box-shadow .2s ease;
 }
 .budget-banner-title {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -317,6 +318,58 @@ a { color: inherit; text-decoration: none; }
   user-select: none;
 }
 .budget-banner-title svg { width: 15px; height: 15px; color: inherit; }
+/* 2026-09-02 新增：新手引導 hint，提示「先選訂購數量再設定預算」。
+   顯示條件見 JS updateBudgetHint()：未選 MOQ 且橫幅未展開時才顯示，屬狀態驅動、
+   不用 localStorage，跟 clearAll() 重置篩選後會再次出現一致（方案 A，見對話紀錄）。
+   預設貼右側；.flip 為視窗空間不足時貼左側；.below 為連左側也不夠時貼下方，
+   三種定位互斥，由 JS 依 getBoundingClientRect() 判斷後加類別 */
+.budget-hint {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  cursor: default;
+  pointer-events: none;
+  z-index: 6;
+}
+.budget-hint.show { display: block; }
+.budget-hint-arrow {
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  margin-top: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--ink);
+  transform: rotate(45deg);
+}
+.budget-hint.flip { left: auto; right: 100%; margin-left: 0; margin-right: 12px; }
+.budget-hint.flip .budget-hint-arrow { left: auto; right: -5px; transform: rotate(225deg); }
+.budget-hint.below {
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-left: 0;
+  margin-top: 10px;
+  white-space: normal;
+  max-width: 220px;
+}
+.budget-hint.below .budget-hint-arrow {
+  left: 50%;
+  top: -5px;
+  margin-top: 0;
+  margin-left: -5px;
+  transform: rotate(45deg);
+}
 /* 基準說明（2026-07-20：原 res-remark 併入，常駐顯示目前價格基準）；
    2026-08-19：加 opacity transition，MOQ 切換文字內容時用 fade 取代原本的整塊背景閃動 */
 .budget-basis-sep { color: var(--ink-2); font-weight: 400; }
@@ -1274,8 +1327,10 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
         <span class="budget-basis-sep">·</span>
         <span class="budget-basis" id="budgetBasis">以 500 件報價為基準</span>
         <svg class="budget-banner-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div class="budget-hint" id="budgetHint">請先在左側選擇訂購數量，再設定單品預算<span class="budget-hint-arrow"></span></div>
       </div>
       <div class="chips budget-banner-chips" id="budgetChips">
+        <button class="chip on" data-budget="all"   onclick="toggleBudget('all')">不限金額</button>
         <button class="chip" data-budget="u100"     onclick="toggleBudget('u100')">NT$100 以下</button>
         <button class="chip" data-budget="100-200"  onclick="toggleBudget('100-200')">NT$100–200</button>
         <button class="chip" data-budget="200-300"  onclick="toggleBudget('200-300')">NT$200–300</button>
@@ -1724,8 +1779,13 @@ function toggle(set, val, cb) {
 // ════════════════════════════════════
 // Chip filters
 // ════════════════════════════════════
+// 2026-09-02 新增「不限金額」chip（比照 MOQ 的「不限」）：
+// 選「不限金額」＝清空所有已選價格帶、與其他 chip 互斥；
+// 選其他任一價格帶＝維持原本多選邏輯，「不限金額」自動熄滅（selBudgets.size 一旦 > 0 即非 all）
 function toggleBudget(id) {
-  if (selBudgets.has(id)) {
+  if (id === 'all') {
+    selBudgets.clear();
+  } else if (selBudgets.has(id)) {
     selBudgets.delete(id);
   } else {
     selBudgets.add(id);
@@ -1735,7 +1795,8 @@ function toggleBudget(id) {
 }
 function updateBudgetChips() {
   document.querySelectorAll('#budgetChips .chip').forEach(b => {
-    b.classList.toggle('on', selBudgets.has(b.dataset.budget));
+    const id = b.dataset.budget;
+    b.classList.toggle('on', id === 'all' ? selBudgets.size === 0 : selBudgets.has(id));
   });
 }
 function pickMoq(id) {
@@ -1783,6 +1844,30 @@ function updateBudgetBasisText() {
   }, 150);
 }
 
+// 2026-09-02 新增：新手引導 hint 顯示邏輯（方案 A，狀態驅動）。
+// 顯示條件：尚未選 MOQ 且橫幅未展開——一旦選了具體訂購數量、或使用者手動展開橫幅，
+// 就代表已經理解或已經照順序操作，hint 即消失；clearAll() 會重置 selMoq／budgetBannerOpen，
+// 因此重來一次篩選時 hint 會再次出現，不需要 localStorage 記錄「看過了」。
+// 定位：預設貼右側；空間不足貼左側（.flip）；兩側都不夠貼下方（.below）。
+function updateBudgetHint() {
+  const hint = document.getElementById('budgetHint');
+  const shouldShow = selMoq === 'all' && !budgetBannerOpen;
+  hint.classList.remove('flip', 'below');
+  hint.classList.toggle('show', shouldShow);
+  if (!shouldShow) return;
+  requestAnimationFrame(() => {
+    const rect = hint.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 8) {
+      hint.classList.add('flip');
+      const flipped = hint.getBoundingClientRect();
+      if (flipped.left < 8) {
+        hint.classList.remove('flip');
+        hint.classList.add('below');
+      }
+    }
+  });
+}
+
 // ════════════════════════════════════
 // Render
 // ════════════════════════════════════
@@ -1804,6 +1889,7 @@ function render() {
   // 2026-08-19：文字改用 fade 切換取代原本切 MOQ 時的整塊背景閃動，只有內容真的變了才
   // 觸發淡入淡出，避免其他篩選互動（跟 budgetBasis 無關）也跟著閃一下
   updateBudgetBasisText();
+  updateBudgetHint();
 
   // active chips
   const achip = document.getElementById('activeChips');
@@ -2468,6 +2554,7 @@ function switchTab(tab) {
   }
   syncStickyTop();
   window.addEventListener('resize', syncStickyTop);
+  window.addEventListener('resize', updateBudgetHint);
 
   // 預算橫幅吸頂偵測：吸住時加 .stuck 縮薄（試做版，效果不佳可整段刪除，橫幅仍會正常 sticky）
   if (banner) {
