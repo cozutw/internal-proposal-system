@@ -341,8 +341,9 @@ a { color: inherit; text-decoration: none; }
   color: #fff;
   font-size: 12px;
   font-weight: 400;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-radius: 4px;
   cursor: default;
   pointer-events: none;
@@ -352,7 +353,6 @@ a { color: inherit; text-decoration: none; }
   transition: opacity .2s ease-in-out, visibility .2s ease-in-out;
 }
 .budget-hint.show { opacity: 1; visibility: visible; }
-.budget-hint-icon { flex-shrink: 0; }
 /* 尖三角箭頭（border trick，取代原本旋轉正方形的鈍角菱形）：
    預設方向箭頭朝左（指向橫幅），.flip 時朝右，.below 時朝上，三者互斥 */
 .budget-hint-arrow {
@@ -1351,11 +1351,6 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
         <span class="budget-basis" id="budgetBasis">以 500 件報價為基準</span>
         <svg class="budget-banner-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
         <div class="budget-hint" id="budgetHint">
-          <svg class="budget-hint-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 21L13 11M18 6L15.5 8.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M9.5 2L10.4453 4.55468L13 5.5L10.4453 6.44532L9.5 9L8.55468 6.44532L6 5.5L8.55468 4.55468L9.5 2Z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"></path>
-            <path d="M19 10L19.5402 11.4598L21 12L19.5402 12.5402L19 14L18.4598 12.5402L17 12L18.4598 11.4598L19 10Z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"></path>
-          </svg>
           <span class="budget-hint-text">先選左側訂購數量再選預算，讓價格區間更精準</span>
           <span class="budget-hint-arrow"></span>
         </div>
