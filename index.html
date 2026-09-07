@@ -816,12 +816,10 @@ a { color: inherit; text-decoration: none; }
 
 /* ⚠️ 測試用「清除密語」按鈕（上線前刪除）：連同下面 .dev-gate-reset 這個
    CSS block，以及 HTML 裡 id="devGateReset" 的按鈕、JS 裡的 devClearGateToken()
-   函式，三處一起刪除即可完整移除，不影響正式邏輯 */
+   函式，三處一起刪除即可完整移除，不影響正式邏輯
+   （2026-09-07 暫時移到 topbar-links，與「業務雲端簡報」並排，外型不變只移除
+   position:fixed 定位，改用 topbar-links 的 flex 排版置放） */
 .dev-gate-reset {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 210;
   font-size: 10px;
   color: var(--color-text-tertiary);
   background: var(--color-bg);
@@ -1188,9 +1186,6 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
   </div>
 </div>
 
-<!-- ⚠️ 測試用「清除密語」按鈕（上線前刪除，見上方 CSS 註解說明三處位置） -->
-<button class="dev-gate-reset" id="devGateReset" onclick="devClearGateToken()">清除密語（測試用）</button>
-
 <!-- ════════ TOPBAR ════════ -->
 <div class="topbar">
   <div class="topbar-inner">
@@ -1211,6 +1206,9 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
           <svg width="16" height="16" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor"><path d="M9.14286 3.00375L14.8571 3M9.14286 3.00375L2 15.0038M9.14286 3.00375L18.4321 21M14.8571 3L22 15.0038M14.8571 3L5.575 21M18.4321 21H5.575M18.4321 21L22 15.0038M5.575 21L2 15.0038M22 15.0038L2 15.0038" stroke-linecap="round" stroke-linejoin="round"></path></svg>
           業務雲端簡報
         </a>
+        <!-- ⚠️ 測試用「清除密語」按鈕（上線前刪除，見上方 CSS 註解說明三處位置。
+             2026-09-07 暫時移到此處，避免擋到匯出按鈕） -->
+        <button class="dev-gate-reset" id="devGateReset" onclick="devClearGateToken()">清除密碼（測試用）</button>
       </div>
     </div>
     <div class="tabs-row">
