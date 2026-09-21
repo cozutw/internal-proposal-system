@@ -1070,12 +1070,18 @@ a { color: inherit; text-decoration: none; }
   border-top: 1px solid var(--line);
   box-shadow: 0 -4px 12px rgba(0,0,0,.05);
   transform: translateY(100%);
-  transition: transform .2s ease;
+  transition: transform .3s cubic-bezier(0.2, 0.8, 0.2, 1);
   pointer-events: none;
 }
 .bottom-bar.show {
   transform: translateY(0);
   pointer-events: auto;
+}
+/* 2026-09-21 新增：已勾選件數變動時的輕微脈動提示，
+   讓使用者在 bar 已經常駐顯示的狀態下，也能注意到件數在變化 */
+.bottom-bar.pulse {
+  transition: transform .15s ease;
+  transform: translateY(0) scale(1.01);
 }
 .bottom-bar-inner {
   max-width: 1280px;
@@ -1150,6 +1156,30 @@ a { color: inherit; text-decoration: none; }
   display: none;
 }
 .bottom-bar-toast.show { display: block; }
+
+/* 2026-09-21 新增：第一次勾選商品的 onboarding 提示，
+   畫面正中央跳出，只在使用者這輩子第一次勾選時顯示一次（見 hasEverSelectedItem） */
+.onboarding-toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 50;
+  transform: translate(-50%, -50%) scale(.96);
+  background: color-mix(in srgb, var(--ink) 70%, transparent);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  white-space: nowrap;
+}
+.onboarding-toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
 
 body.has-bottom-bar .shell { padding-bottom: 160px; }
 </style>
@@ -1425,6 +1455,7 @@ body.has-bottom-bar .shell { padding-bottom: 160px; }
   </div>
 </div>
 <div class="bottom-bar-toast" id="exportToast"></div>
+<div class="onboarding-toast" id="onboardingToast">勾選禮贈品後，即可在下方進行匯出</div>
 
 <script>
 // ════════════════════════════════════
@@ -1502,6 +1533,9 @@ let selMoq     = 'all';
 let sortOrder  = 'asc'; // 2026-08-26 新增：卡片價格排序方向，'asc' | 'desc'
 let selectedIds = new Set(); // 已勾選商品的 _id
 let customerName = ''; // 提案客戶名稱
+// 2026-09-21 新增：這輩子是否已經勾選過商品（用 localStorage 判斷，跨 session 記住）
+// 用於決定 onboarding toast 只在第一次跳出，之後都不再顯示
+let hasEverSelectedItem = localStorage.getItem('cozu_has_selected_item') === '1';
 // 2026-08-19：預算橫幅展開狀態，跟 selMoq 脫鉤——預設收合，選具體 MOQ 時 pickMoq() 會
 // 連動設為展開、切回不限連動設為收合，但使用者可隨時用標題列箭頭手動覆寫
 let budgetBannerOpen = false;
@@ -2056,14 +2090,42 @@ function clearSelected() {
 
 function updateBottomBar() {
   const bar = document.getElementById('bottomBar');
+  const wasShowing = bar.classList.contains('show');
   const count = selectedIds.size;
   document.getElementById('bottomBarCount').textContent = `已選 ${count} 件禮贈品`;
-  bar.classList.toggle('show', count > 0);
-  document.body.classList.toggle('has-bottom-bar', count > 0);
+
+  // bar 從隱藏變顯示，才算「這次的第一次出現」
+  const isFirstAppearance = count > 0 && !wasShowing;
+
+  if (isFirstAppearance && !hasEverSelectedItem) {
+    // 這輩子第一次勾選商品：先跳 onboarding toast，停留 1 秒後 bar 才滑入，
+    // 讓使用者視線有先後順序可以跟，之後（包含清除全部後再勾）都不會再跳
+    hasEverSelectedItem = true;
+    localStorage.setItem('cozu_has_selected_item', '1');
+    showOnboardingToast();
+    setTimeout(() => {
+      bar.classList.add('show');
+      document.body.classList.add('has-bottom-bar');
+    }, 1000);
+  } else {
+    bar.classList.toggle('show', count > 0);
+    document.body.classList.toggle('has-bottom-bar', count > 0);
+    // bar 已經在畫面上、件數又有變動：給一個短暫脈動提示（比首次滑入內斂許多）
+    if (wasShowing && count > 0) {
+      bar.classList.add('pulse');
+      setTimeout(() => bar.classList.remove('pulse'), 150);
+    }
+  }
 
   // 匯出按鈕：客戶名稱有填 且 已勾選至少 1 件商品，才解鎖
   const exportBtn = document.getElementById('exportBtn');
   exportBtn.disabled = !(count > 0 && customerName.length > 0);
+}
+
+function showOnboardingToast() {
+  const toast = document.getElementById('onboardingToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 function onCustomerNameInput() {
